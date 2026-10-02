@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>งานและพลังงาน — สื่อจำลองเชิงโต้ตอบ</title>
+<style>
+  :root {
+    --ink: #1a2332;
+    --muted: #5c6b7c;
+    --line: #dbe3ee;
+    --bg: #e7eef6;
+    --card: #ffffff;
+    --brand: #0f6e6e;
+    --brand-dark: #0b3a4a;
+    --amber: #b45309;
+    --font: "Leelawadee UI", "Segoe UI", Tahoma, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: var(--font);
+    color: var(--ink);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 18px;
+    background: linear-gradient(110deg, #0b3a4a 0%, #0f6e6e 58%, #148a96 100%);
+    color: #fff;
+  }
+  header h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: 0; }
+  header p { margin: 2px 0 0; font-size: 13px; opacity: 0.9; }
+  .badge {
+    flex: none;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.28);
+    border-radius: 999px;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+  .layout {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(240px, 292px) minmax(0, 1fr) minmax(250px, 320px);
+    gap: 12px;
+    padding: 12px;
+  }
+  .panel {
+    background: var(--card);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(15, 40, 70, 0.08);
+    min-height: 0;
+    overflow: auto;
+    padding: 14px;
+  }
+  .panel h2 { margin: 0 0 8px; font-size: 16px; }
+  .stage { display: flex; flex-direction: column; gap: 10px; overflow: auto; }
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .modes button {
+    font: inherit;
+    text-align: left;
+    border: 1px solid var(--line);
+    background: #f8fafc;
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 6px 8px;
+    cursor: pointer;
+    min-height: 46px;
+  }
+  .modes button b { display: block; font-size: 14px; }
+  .modes button small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .modes button.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .modes button.is-on small { color: rgba(255,255,255,0.85); }
+  .modes button:focus-visible, .transport button:focus-visible, .switch input:focus-visible + .ui {
+    outline: 3px solid #99f6e4;
+    outline-offset: 2px;
+  }
+  .field { display: block; margin: 0 0 5px; }
+  .field.is-off { opacity: 0.42; }
+  .field-top { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; margin-bottom: 2px; }
+  .field-top .val { color: var(--brand); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .field .note { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+  input[type="range"] { width: 100%; accent-color: var(--brand); height: 28px; cursor: pointer; }
+  .toggles { display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+  .switch { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.45; cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .switch .ui {
+    flex: none; width: 44px; height: 26px; background: #cbd5e1; border-radius: 999px; position: relative;
+  }
+  .switch .ui::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+    background: #fff; border-radius: 50%; transition: transform 0.15s ease;
+  }
+  .switch input:checked + .ui { background: var(--brand); }
+  .switch input:checked + .ui::after { transform: translateX(18px); }
+  .transport {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    margin: 4px 0 8px;
+  }
+  .transport button {
+    font: inherit; min-height: 42px; border-radius: 10px; cursor: pointer; border: 1px solid #cbd5e1; background: #fff;
+  }
+  .transport button.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; }
+  .transport button:disabled { opacity: 0.45; cursor: default; }
+  .keys { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 12px; }
+  .status-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; }
+  .status {
+    font-size: 13px; font-weight: 700; color: var(--brand-dark);
+    background: #e6f4f4; border-radius: 999px; padding: 4px 10px;
+  }
+  .hint-mode { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 8px 0 0; }
+  .canvas-wrap { position: relative; height: 430px; border-radius: 14px; overflow: hidden; background: #d7eefc; }
+  canvas { width: 100%; height: 100%; display: block; }
+  .scene-label, .hint-overlay {
+    position: absolute; z-index: 2; pointer-events: none;
+  }
+  .scene-label {
+    top: 10px; left: 10px; background: rgba(255,255,255,0.92); color: var(--brand-dark);
+    border-radius: 999px; padding: 5px 10px; font-size: 13px; font-weight: 700;
+  }
+  .hint-overlay {
+    left: 50%; top: 46%; transform: translate(-50%, -50%);
+    background: rgba(11, 58, 74, 0.88); color: #fff; border-radius: 12px; padding: 10px 14px; font-size: 16px;
+  }
+  .hint-overlay[hidden], .chart[hidden] { display: none !important; }
+  .readouts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .readout {
+    background: #f8fafc; border: 1px solid var(--line); border-top: 4px solid var(--c, var(--brand));
+    border-radius: 12px; padding: 8px 10px; min-width: 0;
+  }
+  .readout .name { color: var(--muted); font-size: 12px; }
+  .readout .num { display: block; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
+  .readout .sub { display: block; color: var(--muted); font-size: 12px; line-height: 1.35; }
+  .eq {
+    background: #102a33; color: #e2e8f0; border-radius: 12px; padding: 10px 12px;
+    font-size: 14.5px; line-height: 1.55; overflow-x: auto;
+  }
+  .eq .hot { color: #fde68a; }
+  .eq .param { color: #7dd3fc; }
+  .eq .ok { color: #86efac; }
+  .eq .warn { color: #fecaca; }
+  .chart h2, .kin h2, .mis h2 { margin-bottom: 4px; }
+  .chart-head, .kin-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .chart-head span, .chart-note, .sign-note { color: var(--muted); font-size: 12px; }
+  .chart-cols { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+  .bval { text-align: center; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; min-height: 16px; }
+  .btrack { position: relative; height: 168px; background: #f1f5f9; border-radius: 10px; overflow: hidden; }
+  .bzero { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: #334155; z-index: 2; }
+  .bup, .bdown { position: absolute; left: 18%; width: 64%; border-radius: 5px; }
+  .bup { bottom: 50%; height: 0; }
+  .bdown { top: 50%; height: 0; }
+  .blabel { text-align: center; font-size: 12px; line-height: 1.25; margin-top: 4px; }
+  .blabel small { display: block; color: var(--muted); font-size: 11px; }
+  .kin { margin-top: 14px; }
+  .kin-grid, .force-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .force-grid { margin-top: 8px; }
+  .stat { background: #f8fafc; border-radius: 10px; padding: 8px; min-width: 0; }
+  .stat span { display: block; color: var(--muted); font-size: 12px; }
+  .stat b { display: block; margin-top: 2px; font-size: 18px; font-variant-numeric: tabular-nums; }
+  .stat em { font-style: normal; font-weight: 600; font-size: 12px; color: var(--brand-dark); }
+  .mis { margin-top: 14px; background: #fff7ed; border: 1px solid #fdba74; border-left: 6px solid #ea580c; border-radius: 12px; padding: 12px; }
+  .mis h2 { color: #9a3412; font-size: 15px; }
+  .mis p { margin: 0; line-height: 1.6; font-size: 14.5px; }
+  footer {
+    padding: 6px 16px 8px; color: var(--muted); font-size: 12px; line-height: 1.4;
+  }
+  @media (max-width: 1280px) {
+    .readouts { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 220px minmax(0, 1fr) 236px; }
+    header h1 { font-size: 22px; }
+    .canvas-wrap { height: 380px; }
+  }
+  @media (max-width: 860px) {
+    body { height: auto; overflow: auto; }
+    .layout { display: block; }
+    .panel { margin-bottom: 12px; overflow: visible; }
+    .canvas-wrap { height: 360px; }
+    .stage { overflow: visible; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>งานและพลังงาน</h1>
+    <p>สื่อจำลองเชิงโต้ตอบสำหรับฟิสิกส์ ม.4–ม.6 · งาน แรง พลังงานจลน์ พลังงานศักย์ และแรงไม่อนุรักษ์</p>
+  </div>
+  <div class="badge">g = 9.81 m/s² · ระบบ SI</div>
+</header>
+<main class="layout">
+  <section class="panel" aria-label="แผงควบคุม">
+    <h2>โหมดการจำลอง</h2>
+    <div class="modes" id="modes">
+      <button type="button" data-mode="1"><b>1. แรงคงตัว</b><small>ลากกล่องบนพื้นราบ</small></button>
+      <button type="button" data-mode="2"><b>2. รางสเก็ต</b><small>จลน์และศักย์โน้มถ่วง</small></button>
+      <button type="button" data-mode="3"><b>3. มวล–สปริง</b><small>ศักย์ยืดหยุ่น</small></button>
+      <button type="button" data-mode="4"><b>4. พื้นเอียง</b><small>มีแรงเสียดทานได้</small></button>
+    </div>
+    <div class="transport">
+      <button type="button" class="primary" id="btn-play">เล่น</button>
+      <button type="button" id="btn-pause" disabled>หยุดชั่วคราว</button>
+      <button type="button" id="btn-step">ทีละเฟรม</button>
+      <button type="button" id="btn-reset">เริ่มใหม่</button>
+      <p class="keys">เว้นวรรค = เล่นหรือหยุด · ลูกศรขวา = ทีละเฟรม · R = เริ่มใหม่</p>
+    </div>
+    <div class="toggles">
+      <label class="switch">
+        <input id="tog-vec" type="checkbox" checked>
+        <span class="ui"></span>
+        <span>แสดงเวกเตอร์แรงและทิศทางการกระจัด</span>
+      </label>
+      <label class="switch">
+        <input id="tog-chart" type="checkbox" checked>
+        <span class="ui"></span>
+        <span>แสดงแผนภูมิแท่งพลังงาน</span>
+      </label>
+    </div>
+    <div class="status-row">
+      <h2 style="margin:0">ตัวแปรตั้งต้น</h2>
+      <div class="status" id="status">พร้อมเริ่ม</div>
+    </div>
+    <label class="field" id="field-m">
+      <span class="field-top"><span>มวลวัตถุ m</span><span class="val" id="val-m">5.0 kg</span></span>
+      <input id="in-m" type="range" min="1" max="20" step="1" value="5" aria-label="มวลวัตถุ">
+    </label>
+    <label class="field" id="field-f">
+      <span class="field-top"><span>แรงที่กระทำ F</span><span class="val" id="val-f">50 N</span></span>
+      <input id="in-f" type="range" min="0" max="100" step="5" value="50" aria-label="แรงที่กระทำ">
+    </label>
+    <label class="field" id="field-th">
+      <span class="field-top"><span>มุมของแรง θ</span><span class="val" id="val-th">0°</span></span>
+      <input id="in-th" type="range" min="0" max="180" step="15" value="0" aria-label="มุมของแรง">
+      <p class="note">0° ไปทางขวา · 90° ขึ้นตรง ๆ · 180° ไปทางซ้าย</p>
+    </label>
+    <label class="field" id="field-h">
+      <span class="field-top"><span>ความสูงเริ่มต้น h</span><span class="val" id="val-h">10.0 m</span></span>
+      <input id="in-h" type="range" min="0" max="20" step="1" value="10" aria-label="ความสูงเริ่มต้น">
+    </label>
+    <label class="field" id="field-k">
+      <span class="field-top"><span>ค่าคงที่สปริง k</span><span class="val" id="val-k">100 N/m</span></span>
+      <input id="in-k" type="range" min="10" max="500" step="10" value="100" aria-label="ค่าคงที่สปริง">
+    </label>
+    <label class="field" id="field-mu">
+      <span class="field-top"><span>สัมประสิทธิ์ความเสียดทานจลน์ μk</span><span class="val" id="val-mu">0.00</span></span>
+      <input id="in-mu" type="range" min="0" max="0.5" step="0.05" value="0" aria-label="สัมประสิทธิ์ความเสียดทานจลน์">
+    </label>
+    <p class="hint-mode" id="mode-hint"></p>
+  </section>
+
+  <section class="panel stage" aria-label="ฉากจำลอง">
+    <div class="canvas-wrap">
+      <canvas id="view" width="900" height="430"></canvas>
+      <div class="scene-label" id="scene-label">ลากกล่องบนพื้นราบ</div>
+      <div class="hint-overlay" id="paused-hint">กด “เล่น” เพื่อเริ่มจำลอง</div>
+    </div>
+    <div class="readouts">
+      <article class="readout" style="--c:#0f6e6e">
+        <span class="name">งานรวม W_net</span>
+        <span class="num" id="out-w">0.00 J</span>
+        <span class="sub" id="sub-w">เท่ากับ ΔE_k</span>
+      </article>
+      <article class="readout" style="--c:#d97706">
+        <span class="name">พลังงานจลน์ E_k</span>
+        <span class="num" id="out-ek">0.00 J</span>
+        <span class="sub">½mv²</span>
+      </article>
+      <article class="readout" style="--c:#2563eb">
+        <span class="name">พลังงานศักย์ E_p</span>
+        <span class="num" id="out-ep">0.00 J</span>
+        <span class="sub" id="sub-ep">E_p,g + E_p,s</span>
+      </article>
+      <article class="readout" style="--c:#7c3aed">
+        <span class="name">พลังงานกลรวม E</span>
+        <span class="num" id="out-e">0.00 J</span>
+        <span class="sub">E_k + E_p</span>
+      </article>
+    </div>
+    <div class="eq" id="eq" aria-live="polite"></div>
+  </section>
+
+  <section class="panel" aria-label="การวิเคราะห์">
+    <div class="chart" id="chart">
+      <div class="chart-head">
+        <h2>แผนภูมิแท่งพลังงาน</h2>
+        <span id="chart-scale"></span>
+      </div>
+      <div class="chart-cols">
+        <div><div class="bval" id="bval-ek">0.00</div><div class="btrack"><div class="bup" id="bup-ek" style="background:#f59e0b"></div><div class="bdown" id="bdown-ek" style="background:#f59e0b"></div><div class="bzero"></div></div><div class="blabel">E<sub>k</sub><small>จลน์</small></div></div>
+        <div><div class="bval" id="bval-epg">0.00</div><div class="btrack"><div class="bup" id="bup-epg" style="background:#3b82f6"></div><div class="bdown" id="bdown-epg" style="background:#3b82f6"></div><div class="bzero"></div></div><div class="blabel">E<sub>p,g</sub><small>ศักย์โน้มถ่วง</small></div></div>
+        <div><div class="bval" id="bval-eps">0.00</div><div class="btrack"><div class="bup" id="bup-eps" style="background:#10b981"></div><div class="bdown" id="bdown-eps" style="background:#10b981"></div><div class="bzero"></div></div><div class="blabel">E<sub>p,s</sub><small>ศักย์ยืดหยุ่น</small></div></div>
+        <div><div class="bval" id="bval-wnc">0.00</div><div class="btrack"><div class="bup" id="bup-wnc" style="background:#ef4444"></div><div class="bdown" id="bdown-wnc" style="background:#ef4444"></div><div class="bzero"></div></div><div class="blabel">W<sub>nc</sub><small>งานแรงภายนอก</small></div></div>
+        <div><div class="bval" id="bval-et">0.00</div><div class="btrack"><div class="bup" id="bup-et" style="background:#7c3aed"></div><div class="bdown" id="bdown-et" style="background:#7c3aed"></div><div class="bzero"></div></div><div class="blabel">E<small>พลังงานกลรวม</small></div></div>
+      </div>
+      <p class="chart-note" id="chart-note"></p>
+    </div>
+    <div class="kin">
+      <h2>ค่าวิเคราะห์การเคลื่อนที่</h2>
+      <div class="kin-grid">
+        <div class="stat"><span>ความเร็ว v</span><b id="kin-v">0.00 m/s</b><em id="kin-v-dir">หยุดนิ่ง</em></div>
+        <div class="stat"><span id="kin-s-label">การกระจัด Δx</span><b id="kin-s">0.00 m</b><em id="kin-s-dir">จากจุดเริ่ม</em></div>
+        <div class="stat"><span>เวลา t</span><b id="kin-t">0.00 s</b><em>ตั้งแต่เริ่มเล่น</em></div>
+      </div>
+      <div class="force-grid">
+        <div class="stat"><span>ความเร่ง a</span><b id="kin-a">0.00 m/s²</b></div>
+        <div class="stat"><span>แรงตั้งฉาก N</span><b id="kin-n">0.00 N</b></div>
+        <div class="stat"><span>แรงเสียดทาน f</span><b id="kin-f">0.00 N</b></div>
+      </div>
+      <p class="sign-note" id="sign-note"></p>
+    </div>
+    <aside class="mis">
+      <h2>ความเข้าใจคลาดเคลื่อนที่พบบ่อย</h2>
+      <p id="mis-body" aria-live="polite"></p>
+    </aside>
+  </section>
+</main>
+<footer>
+  สมมติฐาน: g = 9.81 m/s² · หน่วย SI · สปริงและเชือกไม่มีมวล · ระยะยืดเริ่มต้นของสปริง 1.00 m · พื้นเอียงโหมด 4 มุม 30° · ใช้ μk เป็นเกณฑ์ทั้งตอนเริ่มเคลื่อนและขณะเคลื่อนที่ · พลังงานศักย์โน้มถ่วงคิดจากระดับอ้างอิงของแต่ละฉาก
+</footer>
+<script>
+'use strict';
+const G = 9.81;
+const DT = 1 / 120;
+const THETA_MAX = 68 * Math.PI / 180;
+const RAMP = Math.PI / 6;
+const SIN_R = Math.sin(RAMP);
+const COS_R = Math.cos(RAMP);
+const AMP = 1;
+const L0 = 1.7;
+const FONT = '"Leelawadee UI", Tahoma, "Segoe UI", sans-serif';
+const COL = { F: '#e11d48', mg: '#7c3aed', N: '#059669', f: '#d97706', v: '#0284c7', s: '#0f766e', Fs: '#db2777' };
+
+const sim = {
+  mode: 1, playing: false, showVec: true, showChart: true,
+  t: 0, x: 0, v: 0, path: 0, Wapp: 0, Wf: 0, Wspring: 0,
+  ang: -THETA_MAX, om: 0, dir: 1, h0: 10,
+  sx: AMP, sv: 0, phase: 'incline', s: 0, sFlat: 0,
+  trail: [], lastTrail: -1, barPeak: 10
+};
+
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function fmt(n, d) {
+  if (!Number.isFinite(n)) return '—';
+  const digits = d == null ? (Math.abs(n) >= 100 ? 1 : 2) : d;
+  let s = n.toFixed(digits);
+  if (Number(s) === 0) s = (0).toFixed(digits);
+  return s;
+}
+function niceCeil(x) {
+  const v = Math.max(10, x);
+  const pow = Math.pow(10, Math.floor(Math.log10(v)));
+  const n = v / pow;
+  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  return step * pow;
+}
+
+function resetMotion(p) {
+  sim.t = 0;
+  sim.x = 0;
+  sim.v = 0;
+  sim.path = 0;
+  sim.Wapp = 0;
+  sim.Wf = 0;
+  sim.Wspring = 0;
+  sim.h0 = p.h;
+  sim.ang = p.h <= 0.001 ? 0 : -THETA_MAX;
+  sim.om = 0;
+  sim.dir = 1;
+  sim.sx = AMP;
+  sim.sv = 0;
+  sim.phase = p.h <= 0.001 ? 'flat' : 'incline';
+  sim.s = 0;
+  sim.sFlat = 0;
+  sim.trail = [];
+  sim.lastTrail = -1;
+  sim.barPeak = 10;
+}
+
+function mode1Forces(p) {
+  const th = p.theta * Math.PI / 180;
+  const Fx = p.F * Math.cos(th);
+  const Fy = p.F * Math.sin(th);
+  let N = p.m * G - Fy;
+  const lifted = N < -1e-6;
+  if (N < 0) N = 0;
+  const fMax = p.mu * N;
+  let fAxis = 0;
+  let ax = 0;
+  let stuck = false;
+  if (Math.abs(sim.v) < 0.02) {
+    if (Math.abs(Fx) <= fMax + 1e-8) {
+      stuck = true;
+      fAxis = -Fx;
+      ax = 0;
+    } else {
+      fAxis = -Math.sign(Fx || 1) * fMax;
+      ax = (Fx + fAxis) / p.m;
+    }
+  } else {
+    fAxis = -Math.sign(sim.v) * fMax;
+    ax = (Fx + fAxis) / p.m;
+  }
+  return { Fx, Fy, N, fMax, fAxis, lifted, ax, stuck, th };
+}
+
+function stepMode1(dt, p) {
+  const f = mode1Forces(p);
+  if (f.stuck) {
+    sim.v = 0;
+    return;
+  }
+  const v0 = sim.v;
+  let v1 = v0 + f.ax * dt;
+  if (v0 !== 0 && v0 * v1 < 0 && Math.abs(f.Fx) <= f.fMax) v1 = 0;
+  const dx = (v0 + v1) * 0.5 * dt;
+  sim.v = v1;
+  sim.x += dx;
+  sim.path += Math.abs(dx);
+  sim.Wapp += f.Fx * dx;
+  sim.Wf += f.fAxis * dx;
+}
+
+function bowlR() {
+  if (sim.h0 <= 1e-4) return 0;
+  return sim.h0 / (1 - Math.cos(THETA_MAX));
+}
+
+function stepMode2(dt) {
+  const R = bowlR();
+  if (R <= 0) {
+    sim.ang = 0;
+    sim.om = 0;
+    return;
+  }
+  const yNow = R * (1 - Math.cos(sim.ang));
+  const dropNow = Math.max(0, sim.h0 - yNow);
+  if (dropNow < 1e-8) {
+    const alpha = -(G / R) * Math.sin(sim.ang);
+    sim.dir = alpha >= 0 ? 1 : -1;
+    const sArc = 0.5 * G * Math.abs(Math.sin(sim.ang)) * dt * dt;
+    sim.ang = clamp(sim.ang + sim.dir * (sArc / R), -THETA_MAX + 1e-5, THETA_MAX - 1e-5);
+  } else {
+    const speed = Math.sqrt(2 * G * dropNow);
+    let ang = sim.ang + sim.dir * (speed / R) * dt;
+    if (ang > THETA_MAX) {
+      ang = THETA_MAX - (ang - THETA_MAX);
+      sim.dir = -1;
+    } else if (ang < -THETA_MAX) {
+      ang = -THETA_MAX + (-THETA_MAX - ang);
+      sim.dir = 1;
+    }
+    sim.ang = clamp(ang, -THETA_MAX, THETA_MAX);
+  }
+  const y2 = R * (1 - Math.cos(sim.ang));
+  const drop2 = Math.max(0, sim.h0 - y2);
+  sim.om = sim.dir * Math.sqrt(2 * G * drop2) / R;
+}
+
+function stepMode3(dt, p) {
+  const w = Math.sqrt(p.k / p.m);
+  const x0 = sim.sx;
+  const v0 = sim.sv;
+  const c = Math.cos(w * dt);
+  const s = Math.sin(w * dt);
+  const x1 = x0 * c + (v0 / w) * s;
+  const v1 = -x0 * w * s + v0 * c;
+  const ep0 = 0.5 * p.k * x0 * x0;
+  const ep1 = 0.5 * p.k * x1 * x1;
+  sim.Wspring += ep0 - ep1;
+  sim.sx = x1;
+  sim.sv = v1;
+}
+
+function stepMode4(dt, p) {
+  const m = p.m;
+  if (sim.phase === 'incline') {
+    const L = sim.h0 / SIN_R;
+    if (L <= 1e-4) {
+      sim.phase = 'flat';
+      sim.v = 0;
+      return;
+    }
+    const ax = G * (SIN_R - p.mu * COS_R);
+    const fmag = p.mu * m * G * COS_R;
+    if (sim.v <= 1e-4 && ax <= 0) {
+      sim.v = 0;
+      return;
+    }
+    const v0 = sim.v;
+    let v1 = v0 + ax * dt;
+    if (v1 < 0) v1 = 0;
+    const ds = (v0 + v1) * 0.5 * dt;
+    if (sim.s + ds >= L && ds > 0) {
+      const onRamp = Math.max(0, L - sim.s);
+      const frac = clamp(onRamp / ds, 0, 1);
+      sim.Wf -= fmag * onRamp;
+      sim.path += onRamp;
+      sim.s = L;
+      sim.v = Math.max(0, v0 + (v1 - v0) * frac);
+      sim.phase = 'flat';
+      const dt2 = dt * (1 - frac);
+      if (dt2 > 1e-5) stepMode4(dt2, p);
+      return;
+    }
+    sim.s += ds;
+    sim.v = v1;
+    sim.Wf -= fmag * Math.max(0, ds);
+    sim.path += Math.max(0, ds);
+    return;
+  }
+  if (sim.v <= 1e-4) {
+    sim.v = 0;
+    return;
+  }
+  if (p.mu <= 1e-8) {
+    const ds = sim.v * dt;
+    sim.sFlat += ds;
+    sim.path += ds;
+    return;
+  }
+  const fmag = p.mu * m * G;
+  const ax = -p.mu * G;
+  const v0 = sim.v;
+  const dtStop = v0 / (p.mu * G);
+  if (dt < dtStop) {
+    const v1 = v0 + ax * dt;
+    const ds = (v0 + v1) * 0.5 * dt;
+    sim.v = v1;
+    sim.sFlat += ds;
+    sim.path += ds;
+    sim.Wf -= fmag * ds;
+  } else {
+    const ds = (v0 * dtStop) * 0.5;
+    sim.v = 0;
+    sim.sFlat += ds;
+    sim.path += ds;
+    sim.Wf -= fmag * ds;
+  }
+}
+
+function poseMode4() {
+  const L = sim.h0 > 0 ? sim.h0 / SIN_R : 0;
+  if (sim.phase === 'incline') {
+    const s = Math.min(Math.max(sim.s, 0), L);
+    return { x: s * COS_R, y: Math.max(0, sim.h0 - s * SIN_R), incline: true };
+  }
+  return { x: L * COS_R + sim.sFlat, y: 0, incline: false };
+}
+
+function samplePoint() {
+  if (sim.mode === 1) return { x: sim.x, y: 0 };
+  if (sim.mode === 2) {
+    const R = bowlR();
+    return { x: R * Math.sin(sim.ang), y: R * (1 - Math.cos(sim.ang)) };
+  }
+  if (sim.mode === 3) return { x: L0 + sim.sx, y: 0 };
+  const pose = poseMode4();
+  return { x: pose.x, y: pose.y };
+}
+
+function rememberTrail() {
+  const pt = samplePoint();
+  const prev = sim.trail[sim.trail.length - 1];
+  if (prev && Math.hypot(pt.x - prev.x, pt.y - prev.y) < 0.03) return;
+  if (sim.lastTrail >= 0 && sim.t - sim.lastTrail < 0.045) return;
+  sim.lastTrail = sim.t;
+  sim.trail.push(pt);
+  if (sim.trail.length > 110) sim.trail.shift();
+}
+
+function physicsStep(dt, p) {
+  sim.t += dt;
+  if (sim.mode === 1) stepMode1(dt, p);
+  else if (sim.mode === 2) stepMode2(dt, p);
+  else if (sim.mode === 3) stepMode3(dt, p);
+  else stepMode4(dt, p);
+  rememberTrail();
+}
+
+function metrics(p) {
+  const m = p.m;
+  if (sim.mode === 1) {
+    const f = mode1Forces(p);
+    const ek = 0.5 * m * sim.v * sim.v;
+    const wnet = sim.Wapp + sim.Wf;
+    return {
+      ek, epg: 0, eps: 0, ep: 0, etot: ek, wnet, wnc: wnet,
+      v: sim.v, s: sim.x, a: f.stuck ? 0 : f.ax, N: f.N, f: f.stuck ? f.fAxis : f.fAxis,
+      forces: f, y: 0
+    };
+  }
+  if (sim.mode === 2) {
+    const R = bowlR();
+    const y = R ? R * (1 - Math.cos(sim.ang)) : 0;
+    const v = R * sim.om;
+    const speed = Math.abs(v);
+    const ek = 0.5 * m * speed * speed;
+    const epg = m * G * y;
+    const N = R ? m * G * Math.cos(sim.ang) + (m * speed * speed) / R : m * G;
+    const at = -G * Math.sin(sim.ang);
+    const wgrav = m * G * (sim.h0 - y);
+    return {
+      ek, epg, eps: 0, ep: epg, etot: ek + epg, wnet: wgrav, wnc: 0,
+      v, s: R * (sim.ang + THETA_MAX), a: at, N, f: 0, y, R, speed
+    };
+  }
+  if (sim.mode === 3) {
+    const ek = 0.5 * m * sim.sv * sim.sv;
+    const eps = 0.5 * p.k * sim.sx * sim.sx;
+    const a = -(p.k / m) * sim.sx;
+    return {
+      ek, epg: 0, eps, ep: eps, etot: ek + eps, wnet: sim.Wspring, wnc: 0,
+      v: sim.sv, s: sim.sx, a, N: m * G, f: 0, y: 0,
+      Fs: -p.k * sim.sx
+    };
+  }
+  const pose = poseMode4();
+  const ek = 0.5 * m * sim.v * sim.v;
+  const epg = m * G * pose.y;
+  const wgrav = m * G * (sim.h0 - pose.y);
+  const incline = sim.phase === 'incline';
+  const N = incline ? m * G * COS_R : m * G;
+  const fmag = p.mu * N;
+  const a = incline ? G * (SIN_R - p.mu * COS_R) : (sim.v > 1e-4 ? -p.mu * G : 0);
+  const fSigned = sim.v > 1e-4 || a > 0 ? -fmag : 0;
+  return {
+    ek, epg, eps: 0, ep: epg, etot: ek + epg, wnet: wgrav + sim.Wf, wnc: sim.Wf,
+    v: sim.v, s: sim.path, a, N, f: fSigned, y: pose.y, pose
+  };
+}
+
+function dirWord(v) {
+  if (Math.abs(v) < 0.03) return 'หยุดนิ่ง';
+  if (sim.mode === 4 && sim.phase === 'incline') return v >= 0 ? 'ลงตามราง' : 'ขึ้นตามราง';
+  if (sim.mode === 2) return v >= 0 ? 'ไปทางขวาตามราง' : 'ไปทางซ้ายตามราง';
+  return v >= 0 ? 'ไปทางขวา' : 'ไปทางซ้าย';
+}
+
+function misconception(p, met) {
+  if (sim.mode === 1) {
+    const cos = Math.cos(p.theta * Math.PI / 180);
+    const f = met.forces;
+    if (f.lifted) {
+      return 'องค์ประกอบแนวดิ่งของแรงมากกว่าน้ำหนัก แรงตั้งฉากจึงเป็นศูนย์ และไม่มีแรงเสียดทาน แบบจำลองยังวางกล่องบนพื้นเพื่อดูงานตามแนวระดับ งานเกิดจากองค์ประกอบตามแนวการเคลื่อนที่เท่านั้น';
+    }
+    if (f.stuck || (Math.abs(met.v) < 0.02 && sim.t > 0.05)) {
+      if (Math.abs(cos) < 0.03) {
+        return 'ออกแรงมากไม่ได้แปลว่าได้งานมาก ตอนนี้วัตถุไม่เคลื่อนที่ และแรงยังตั้งฉากกับแนวระดับ (θ = 90°, cos 90° = 0) การกระจัดเป็นศูนย์ งานจึงเป็นศูนย์ทั้งจากสูตร W = Fs cosθ';
+      }
+      return 'ออกแรงมากไม่ได้แปลว่าได้งานมากเสมอ ตอนนี้วัตถุไม่เคลื่อนที่ การกระจัดเป็นศูนย์ งานของทุกแรงจึงเป็นศูนย์ แม้ขนาดของแรงจะไม่เป็นศูนย์';
+    }
+    if (Math.abs(cos) < 0.03) {
+      return 'แรงตั้งฉากกับทิศการเคลื่อนที่ งานของแรง F เป็นศูนย์ เพราะ cos 90° = 0 วัตถุอาจเคลื่อนที่อยู่แล้ว แต่แรงที่ตั้งฉากกับการกระจัดไม่ทำงาน';
+    }
+    if (f.Fx * met.v < -0.05) {
+      return 'แรงมีส่วนสวนทางความเร็ว งานของแรงนี้เป็นลบ พลังงานจลน์จึงลดลง งานทางฟิสิกส์เป็นบวก ลบ หรือศูนย์ ได้ ไม่ได้เป็นบวกเสมอ';
+    }
+    if (p.theta > 90 && f.Fx * met.v > 0) {
+      let msg = 'มุม θ บนแถบเลื่อนวัดจากแกนไปทางขวา ไม่ใช่มุมระหว่างแรงกับการกระจัดเสมอไป ที่ θ = 180° แรงชี้ไปทางซ้าย ถ้ากล่องเคลื่อนที่ไปทางซ้ายด้วย งานยังเป็นบวก เพราะแรงกับการกระจัดไปทางเดียวกัน';
+      if (p.mu > 0) msg += ' ส่วนแรงเสียดทานต้านการเคลื่อนที่ งานของแรงเสียดทานเป็นลบ พลังงานกลจึงลดและเปลี่ยนเป็นความร้อน';
+      return msg;
+    }
+    if (p.mu > 0 && Math.abs(met.v) > 0.05) {
+      return 'พลังงานกลรวมไม่ได้คงที่เสมอ เมื่อมีแรงเสียดทานซึ่งเป็นแรงไม่อนุรักษ์ งานของแรงเสียดทานเป็นลบ พลังงานกลส่วนที่หายไปเปลี่ยนเป็นความร้อน ใช้ความสัมพันธ์ E_i + W_nc = E_f';
+    }
+    return 'งานทางฟิสิกส์คือ W = Fs cosθ ขึ้นกับขนาดแรง การกระจัด และมุมระหว่างกัน ถ้าไม่มีการกระจัด หรืองานจากแรงที่ตั้งฉากกับการกระจัด งานเท่ากับศูนย์ แม้จะออกแรงมาก';
+  }
+  if (sim.mode === 2) {
+    const epBottom = p.m * G * met.y;
+    const epRelease = p.m * G * (met.y - sim.h0);
+    const ref = 'พลังงานศักย์โน้มถ่วงไม่มีค่าสัมบูรณ์ ฉากนี้ให้ก้นรางเป็นศูนย์ จึงได้ E_p = ' + fmt(epBottom) + ' J ถ้าใช้จุดปล่อยเป็นศูนย์ E_p จะเป็น ' + fmt(epRelease) + ' J ค่าเปลี่ยน แต่ผลต่างระหว่างสองจุดเท่าเดิม';
+    if (sim.h0 <= 0.001) return ref + ' ตอนนี้ความสูงเริ่มต้นเป็นศูนย์ วัตถุอยู่ที่ระดับอ้างอิงแล้ว';
+    if (met.y < sim.h0 * 0.08) return ref + ' ใกล้ก้นรางความเร็วสูงสุด ศักย์เหลือน้อย จลน์มากที่สุด และพลังงานกลรวมคงที่เพราะไม่มีแรงเสียดทาน';
+    if (Math.abs(met.v) < 0.35 && met.y > sim.h0 * 0.82 && sim.t > 0.15) return ref + ' ที่จุดสูงสุดชั่วขณะความเร็วเป็นศูนย์ พลังงานอยู่ในรูปศักย์เกือบทั้งหมด';
+    return ref + ' ไม่มีแรงไม่อนุรักษ์ จึงมีแค่การสลับระหว่าง E_k กับ E_p ผลรวมไม่เปลี่ยน';
+  }
+  if (sim.mode === 3) {
+    if (Math.abs(sim.sx) > 0.9 * AMP && Math.abs(met.v) < 0.35) {
+      return 'ที่ระยะยืดหรือหดสุด วัตถุหยุดชั่วขณะ พลังงานทั้งหมดเป็นพลังงานศักย์ยืดหยุ่น ½kx² แรงสปริงมีขนาดมากสุดในจังหวะที่ความเร็วเป็นศูนย์ แรงมากไม่ได้แปลว่าพลังงานจลน์มาก';
+    }
+    if (Math.abs(sim.sx) < 0.08) {
+      return 'ขณะผ่านจุดสมดุล สปริงไม่สะสมพลังงาน ศักย์ยืดหยุ่นเป็นศูนย์ ความเร็วและพลังงานจลน์สูงสุด ผลรวมพลังงานกลยังเท่าเดิม เพราะแรงสปริงเป็นแรงอนุรักษ์และไม่มีแรงเสียดทาน';
+    }
+    return 'พลังงานจลน์กับพลังงานศักย์ยืดหยุ่นสลับกันไปมา ผลรวมคงที่ เพราะไม่มีแรงเสียดทาน พลังงานกลรวมคงที่ไม่ได้แปลว่าพลังงานแต่ละรูปต้องคงที่';
+  }
+  const heat = Math.max(0, -met.wnc);
+  if (p.mu <= 0) {
+    return 'ตอนนี้ μk = 0 ไม่มีแรงไม่อนุรักษ์ พลังงานกลรวมคงที่ ศักย์โน้มถ่วงซึ่งคิดจากพื้นราบเป็นระดับอ้างอิงเปลี่ยนไปเป็นพลังงานจลน์ เมื่อถึงพื้นราบวัตถุเคลื่อนที่ต่อด้วยความเร็วคงที่';
+  }
+  if (Math.abs(met.v) < 0.03 && sim.phase === 'incline' && sim.t > 0.05) {
+    return 'ถ้าวัตถุไม่ขยับ แม้มีแรงเสียดทาน งานก็เป็นศูนย์ เพราะไม่มีการกระจัด พลังงานกลจึงไม่ลด พื้นเอียง 30° จะเริ่มไถลเมื่อ μk น้อยกว่า tan 30° ซึ่งมีค่าประมาณ 0.577';
+  }
+  if (sim.phase === 'flat' && Math.abs(met.v) < 0.03 && sim.t > 0.1) {
+    return 'วัตถุหยุดแล้ว พลังงานจลน์เป็นศูนย์ เพราะแรงเสียดทานทำงานเป็นลบสะสม ' + fmt(met.wnc) + ' J พลังงานกลรวมไม่คงที่ ส่วนที่หายไปเปลี่ยนเป็นความร้อนประมาณ ' + fmt(heat) + ' J กฎที่ใช้อยู่คือ E_i + W_nc = E_f';
+  }
+  return 'มีแรงเสียดทานซึ่งเป็นแรงไม่อนุรักษ์ พลังงานกลรวมจึงไม่คงที่เสมอ มันลดลงตามงานของแรงเสียดทาน (' + fmt(met.wnc) + ' J) และส่วนนี้เปลี่ยนเป็นความร้อนประมาณ ' + fmt(heat) + ' J พลังงานศักย์ในฉากนี้คิดจากพื้นราบเป็นระดับอ้างอิง';
+}
+
+function matchHTML(a, b) {
+  const err = Math.abs(a - b);
+  const tol = Math.max(0.8, 0.03 * Math.max(1, Math.abs(a), Math.abs(b)));
+  if (err <= tol) return '<span class="ok">สอดคล้องทฤษฎีบทงาน–พลังงาน: W_net = ΔE_k</span>';
+  return '<span class="warn">W_net − ΔE_k = ' + fmt(a - b) + ' J (เปลี่ยนตัวแปรระหว่างทางอาจทำให้สองค่านี้ไม่ทับกันพอดี)</span>';
+}
+
+function equationHTML(p, met) {
+  const hot = function (x) { return '<b class="hot">' + x + '</b>'; };
+  const param = function (x) { return '<b class="param">' + x + '</b>'; };
+  if (sim.mode === 1) {
+    const cos = Math.cos(p.theta * Math.PI / 180);
+    let phi = 'ยังไม่มีการกระจัด';
+    if (Math.abs(met.v) > 0.03 && p.F > 0) {
+      const c = clamp((met.forces.Fx * Math.sign(met.v)) / p.F, -1, 1);
+      phi = fmt(Math.acos(c) * 180 / Math.PI, 0) + '°';
+    }
+    return [
+      'W = Fs cosφ &nbsp;·&nbsp; φ คือมุมระหว่างแรงกับทิศการกระจัด',
+      'F = ' + param(fmt(p.F, 0)) + ' N · θ = ' + param(fmt(p.theta, 0)) + '° · cosθ = ' + param(fmt(cos, 3)) + ' · F_x = ' + param(fmt(met.forces.Fx)) + ' N · φ = ' + hot(phi),
+      'W_F = ' + hot(fmt(sim.Wapp)) + ' J · W_f = ' + hot(fmt(sim.Wf)) + ' J · W_net = ' + hot(fmt(met.wnet)) + ' J · ΔE_k = ' + hot(fmt(met.ek)) + ' J',
+      matchHTML(met.wnet, met.ek)
+    ].join('<br>');
+  }
+  if (sim.mode === 2) {
+    const ei = p.m * G * sim.h0;
+    const ok = Math.abs(met.etot - ei) < Math.max(0.5, 0.01 * ei);
+    return [
+      'E_k = ½mv² = ' + hot(fmt(met.ek)) + ' J &nbsp;·&nbsp; E_p = mgh = ' + hot(fmt(met.epg)) + ' J',
+      'h = ' + hot(fmt(met.y)) + ' m จากก้นราง · v = ' + hot(fmt(met.v)) + ' m/s · m = ' + param(fmt(p.m, 1)) + ' kg',
+      'E_k + E_p = ' + hot(fmt(met.etot)) + ' J · E ตอนปล่อย = ' + param(fmt(ei)) + ' J · W_nc = 0',
+      ok ? '<span class="ok">ไม่มีแรงไม่อนุรักษ์ พลังงานกลรวมคงที่</span>' : '<span class="warn">พลังงานกลเปลี่ยนจากค่าตอนปล่อย ' + fmt(met.etot - ei) + ' J</span>'
+    ].join('<br>');
+  }
+  if (sim.mode === 3) {
+    return [
+      'E_k = ½mv² = ' + hot(fmt(met.ek)) + ' J &nbsp;·&nbsp; E_p,s = ½kx² = ' + hot(fmt(met.eps)) + ' J',
+      'x = ' + hot(fmt(sim.sx)) + ' m · v = ' + hot(fmt(met.v)) + ' m/s · k = ' + param(fmt(p.k, 0)) + ' N/m · m = ' + param(fmt(p.m, 1)) + ' kg',
+      'E_k + E_p,s = ' + hot(fmt(met.etot)) + ' J · W_net = ' + hot(fmt(met.wnet)) + ' J · W_nc = 0',
+      matchHTML(met.wnet, met.ek)
+    ].join('<br>');
+  }
+  const ei = p.m * G * sim.h0;
+  const left = ei + met.wnc;
+  const err = Math.abs(left - met.etot);
+  const tol = Math.max(0.8, 0.03 * Math.max(1, Math.abs(ei), Math.abs(met.etot)));
+  const law = err <= tol
+    ? '<span class="ok">E_i + W_nc = E_f คือ ' + fmt(ei) + ' + (' + fmt(met.wnc) + ') = ' + fmt(met.etot) + ' J</span>'
+    : '<span class="warn">E_i + W_nc − E = ' + fmt(left - met.etot) + ' J</span>';
+  return [
+    'E_i + W_nc = E_f &nbsp;·&nbsp; W_f = −μ_k N s',
+    'h = ' + hot(fmt(met.y)) + ' m · s = ' + hot(fmt(met.s)) + ' m · v = ' + hot(fmt(met.v)) + ' m/s · μ_k = ' + param(fmt(p.mu, 2)),
+    'E_k = ' + hot(fmt(met.ek)) + ' J · E_p = ' + hot(fmt(met.epg)) + ' J · W_nc = ' + hot(fmt(met.wnc)) + ' J · E = ' + hot(fmt(met.etot)) + ' J',
+    law
+  ].join('<br>');
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2));
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function drawPill(ctx, text, x, y, color) {
+  ctx.save();
+  ctx.font = '12px ' + FONT;
+  const w = ctx.measureText(text).width;
+  roundRect(ctx, x - w / 2 - 5, y - 11, w + 10, 18, 6);
+  ctx.fillStyle = 'rgba(255,255,255,0.94)';
+  ctx.fill();
+  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = color;
+  ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y - 1);
+  ctx.restore();
+}
+
+function drawArrow(ctx, x1, y1, x2, y2, color, label) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  if (len < 8) return;
+  const ang = Math.atan2(dy, dx);
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  const head = Math.min(12, len * 0.45);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - head * Math.cos(ang - 0.38), y2 - head * Math.sin(ang - 0.38));
+  ctx.lineTo(x2 - head * Math.cos(ang + 0.38), y2 - head * Math.sin(ang + 0.38));
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  if (label) {
+    const lx = x2 + 14 * Math.cos(ang);
+    const ly = y2 + 14 * Math.sin(ang);
+    drawPill(ctx, label, lx, ly, color);
+  }
+}
+
+function drawScale(ctx, x, y, ppm) {
+  let meters = 1;
+  if (ppm > 150) meters = 0.5;
+  if (ppm < 28) meters = 2;
+  if (ppm < 16) meters = 5;
+  const px = meters * ppm;
+  ctx.save();
+  ctx.strokeStyle = '#0f172a';
+  ctx.fillStyle = '#0f172a';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + px, y);
+  ctx.moveTo(x, y - 5);
+  ctx.lineTo(x, y + 5);
+  ctx.moveTo(x + px, y - 5);
+  ctx.lineTo(x + px, y + 5);
+  ctx.stroke();
+  ctx.font = '12px ' + FONT;
+  ctx.textAlign = 'center';
+  ctx.fillText(meters + ' m', x + px / 2, y - 8);
+  ctx.restore();
+}
+
+function drawOrientedCrate(ctx, cx, cy, size, tx, ty, nx, ny) {
+  const hx = tx * size / 2;
+  const hy = ty * size / 2;
+  const ux = nx * size / 2;
+  const uy = ny * size / 2;
+  const pts = [
+    [cx - ux - hx, cy - uy - hy],
+    [cx - ux + hx, cy - uy + hy],
+    [cx + ux + hx, cy + uy + hy],
+    [cx + ux - hx, cy + uy - hy]
+  ];
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  pts.forEach(function (pt, i) { if (i) ctx.lineTo(pt[0], pt[1]); });
+  ctx.closePath();
+  ctx.fillStyle = '#d08a45';
+  ctx.fill();
+  ctx.strokeStyle = '#7c4a1e';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  ctx.lineTo(pts[2][0], pts[2][1]);
+  ctx.moveTo(pts[1][0], pts[1][1]);
+  ctx.lineTo(pts[3][0], pts[3][1]);
+  ctx.stroke();
+}
+
+function drawCrate(ctx, cx, cy, size, rot) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rot || 0);
+  ctx.fillStyle = '#d08a45';
+  ctx.strokeStyle = '#7c4a1e';
+  ctx.lineWidth = 2;
+  roundRect(ctx, -size / 2, -size / 2, size, size, 5);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(-size / 2 + 3, -size / 2 + 3);
+  ctx.lineTo(size / 2 - 3, size / 2 - 3);
+  ctx.moveTo(size / 2 - 3, -size / 2 + 3);
+  ctx.lineTo(-size / 2 + 3, size / 2 - 3);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawSky(ctx, w, h) {
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#7ec8ea');
+  g.addColorStop(0.55, '#dff3fb');
+  g.addColorStop(1, '#c8e6c4');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.18, 54, 36, 16, 0, 0, 7);
+  ctx.ellipse(w * 0.24, 58, 24, 14, 0, 0, 7);
+  ctx.ellipse(w * 0.72, 78, 42, 16, 0, 0, 7);
+  ctx.fill();
+  ctx.fillStyle = '#fde68a';
+  ctx.beginPath();
+  ctx.arc(w - 70, 52, 22, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+function drawLab(ctx, w, h, groundY) {
+  const wall = ctx.createLinearGradient(0, 0, 0, groundY);
+  wall.addColorStop(0, '#d5e6f5');
+  wall.addColorStop(1, '#eef5fb');
+  ctx.fillStyle = wall;
+  ctx.fillRect(0, 0, w, groundY);
+  ctx.fillStyle = '#b7d4ea';
+  roundRect(ctx, w - 150, 28, 110, 78, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#7f9db5';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(w - 95, 28);
+  ctx.lineTo(w - 95, 106);
+  ctx.moveTo(w - 150, 67);
+  ctx.lineTo(w - 40, 67);
+  ctx.stroke();
+  ctx.fillStyle = '#c4b29a';
+  ctx.fillRect(0, groundY, w, h - groundY);
+  ctx.fillStyle = '#a89078';
+  ctx.fillRect(0, groundY, w, 8);
+}
+
+function forceScale(values) {
+  const maxMag = Math.max.apply(null, values.map(function (v) { return Math.abs(v); }).concat([8]));
+  return 118 / maxMag;
+}
+
+function chartScale(p, met) {
+  const vals = [met.ek, met.epg, met.eps, met.wnc, met.etot].map(function (v) { return Math.abs(v); });
+  const maxAbs = Math.max.apply(null, vals.concat([0]));
+  if (sim.mode === 2 || sim.mode === 4) {
+    const ei = p.m * G * Math.max(sim.h0, 0);
+    return niceCeil(Math.max(10, ei, maxAbs));
+  }
+  if (sim.mode === 3) return niceCeil(Math.max(10, met.etot, maxAbs));
+  sim.barPeak = Math.max(sim.barPeak, niceCeil(Math.max(10, maxAbs)));
+  return sim.barPeak;
+}
+
+function drawTrail(ctx, map, r) {
+  for (let i = 0; i < sim.trail.length; i++) {
+    const pt = sim.trail[i];
+    const s = map(pt.x, pt.y);
+    const a = ((i + 1) / sim.trail.length) * 0.65;
+    ctx.fillStyle = 'rgba(15, 110, 110,' + a + ')';
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawLegend(ctx, w, lines) {
+  ctx.save();
+  ctx.font = '12px ' + FONT;
+  const width = 168;
+  const height = 16 + lines.length * 16;
+  const x = w - width - 12;
+  const y = 12;
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  roundRect(ctx, x, y, width, height, 8);
+  ctx.fill();
+  lines.forEach(function (line, i) {
+    ctx.fillStyle = line.color;
+    ctx.fillRect(x + 8, y + 10 + i * 16, 10, 10);
+    ctx.fillStyle = '#1e293b';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(line.text, x + 24, y + 8 + i * 16);
+  });
+  ctx.restore();
+}
+
+function drawMode1(ctx, w, h, p, met) {
+  const groundY = h * 0.74;
+  drawLab(ctx, w, h, groundY);
+  const ppm = 70;
+  const box = 58;
+  const bx = w * 0.4;
+  const by = groundY - box / 2 - 2;
+  const plank = 46;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, groundY, w, h - groundY);
+  ctx.clip();
+  ctx.strokeStyle = 'rgba(90,60,40,0.28)';
+  ctx.lineWidth = 2;
+  const shift = ((sim.x * ppm) % plank + plank) % plank;
+  for (let x = -shift; x < w + plank; x += plank) {
+    ctx.beginPath();
+    ctx.moveTo(x, groundY);
+    ctx.lineTo(x, h);
+    ctx.stroke();
+  }
+  ctx.restore();
+  const map = function (xw) {
+    return { x: bx - (sim.x - xw) * ppm, y: groundY - 3 };
+  };
+  drawTrail(ctx, function (xw) { return map(xw); }, 3.2);
+  const startX = bx - sim.x * ppm;
+  if (sim.showVec && Math.abs(sim.x) > 0.05) {
+    ctx.save();
+    ctx.strokeStyle = COL.s;
+    ctx.setLineDash([6, 5]);
+    ctx.lineWidth = 2;
+    const x1 = clamp(startX, 16, w - 16);
+    const x2 = bx;
+    ctx.beginPath();
+    ctx.moveTo(x1, groundY + 28);
+    ctx.lineTo(x2, groundY + 28);
+    ctx.stroke();
+    ctx.restore();
+    if (startX > 8 && startX < w - 8) {
+      ctx.fillStyle = '#0f766e';
+      ctx.font = '12px ' + FONT;
+      ctx.textAlign = 'center';
+      ctx.fillText('จุดเริ่ม', startX, groundY + 46);
+    }
+    drawPill(ctx, 'ทิศการกระจัด', (clamp(startX, 16, w - 16) + bx) / 2, groundY + 16, COL.s);
+  }
+  ctx.fillStyle = 'rgba(0,0,0,0.16)';
+  ctx.beginPath();
+  ctx.ellipse(bx, groundY + 4, 30, 7, 0, 0, 7);
+  ctx.fill();
+  if (p.mu > 0 && Math.abs(sim.v) > 0.15) {
+    const glow = ctx.createRadialGradient(bx, groundY, 2, bx, groundY, 34);
+    glow.addColorStop(0, 'rgba(249,115,22,0.7)');
+    glow.addColorStop(1, 'rgba(249,115,22,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(bx, groundY, 34, 0, 7);
+    ctx.fill();
+  }
+  drawCrate(ctx, bx, by, box, 0);
+  if (sim.showVec && Math.abs(sim.v) < 0.03 && Math.abs(sim.x) < 0.04) {
+    drawPill(ctx, 'ไม่มีการกระจัด งาน = 0', bx, by - box / 2 - 18, '#9a3412');
+  }
+  if (sim.showVec) {
+    const f = met.forces;
+    const pxN = forceScale([p.F, p.m * G, f.N, f.fAxis]);
+    const pxV = 70 / Math.max(4, Math.abs(sim.v));
+    const fx = f.Fx * pxN;
+    const fy = -f.Fy * pxN;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(225,29,72,0.45)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + fx, by);
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx, by + fy);
+    ctx.stroke();
+    ctx.restore();
+    if (p.theta > 2 && p.F > 0) {
+      ctx.save();
+      ctx.strokeStyle = COL.F;
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      const steps = 12;
+      for (let i = 0; i <= steps; i++) {
+        const a = (p.theta * Math.PI / 180) * (i / steps);
+        const x = bx + 32 * Math.cos(a);
+        const y = by - 32 * Math.sin(a);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+      const mid = (p.theta * Math.PI / 180) / 2;
+      drawPill(ctx, 'θ', bx + 48 * Math.cos(mid), by - 48 * Math.sin(mid), COL.F);
+    }
+    drawArrow(ctx, bx, by, bx + fx, by + fy, COL.F, 'F ' + fmt(p.F, 0) + ' N');
+    drawArrow(ctx, bx - 14, by, bx - 14, by + p.m * G * pxN, COL.mg, 'mg ' + fmt(p.m * G, 0) + ' N');
+    if (f.N > 0.4) drawArrow(ctx, bx + 16, by - box / 2, bx + 16, by - box / 2 - f.N * pxN, COL.N, 'N ' + fmt(f.N, 0) + ' N');
+    if (Math.abs(f.fAxis) > 0.4) {
+      drawArrow(ctx, bx, groundY - 14, bx + f.fAxis * pxN, groundY - 14, COL.f, 'f ' + fmt(Math.abs(f.fAxis), 0) + ' N');
+    }
+    if (Math.abs(sim.v) > 0.08) {
+      drawArrow(ctx, bx - 20, by - box / 2 - 22, bx - 20 + sim.v * pxV, by - box / 2 - 22, COL.v, 'v ' + fmt(sim.v) + ' m/s');
+    }
+    drawLegend(ctx, w, [
+      { color: COL.F, text: 'F แรงที่ออก' },
+      { color: COL.mg, text: 'mg น้ำหนัก' },
+      { color: COL.N, text: 'N แรงตั้งฉาก' },
+      { color: COL.f, text: 'f แรงเสียดทาน' },
+      { color: COL.v, text: 'v คนละมาตราส่วน' }
+    ]);
+  }
+  drawScale(ctx, 18, h - 18, ppm);
+}
+
+function drawMode2(ctx, w, h, p, met) {
+  drawSky(ctx, w, h);
+  const R = Math.max(bowlR(), 0.001);
+  const halfW = R * Math.sin(THETA_MAX);
+  const margin = 56;
+  const ppm = Math.min((w - margin * 2) / Math.max(2 * halfW, 1), (h - 120) / Math.max(sim.h0 + 2.2, 2.5));
+  const originX = w / 2;
+  const originY = h - 58;
+  const X = function (x) { return originX + x * ppm; };
+  const Y = function (y) { return originY - y * ppm; };
+  const steps = 64;
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const th = -THETA_MAX + (2 * THETA_MAX * i) / steps;
+    const x = X(R * Math.sin(th));
+    const y = Y(R * (1 - Math.cos(th)));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.lineTo(X(halfW) + 16, h);
+  ctx.lineTo(X(-halfW) - 16, h);
+  ctx.closePath();
+  ctx.fillStyle = '#6aa85a';
+  ctx.fill();
+  ctx.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const th = -THETA_MAX + (2 * THETA_MAX * i) / steps;
+    const x = X(R * Math.sin(th));
+    const y = Y(R * (1 - Math.cos(th)));
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = '#3f6212';
+  ctx.lineWidth = 8;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.strokeStyle = '#ecfccb';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.save();
+  ctx.strokeStyle = 'rgba(15,23,42,0.55)';
+  ctx.setLineDash([6, 5]);
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(20, originY);
+  ctx.lineTo(w - 20, originY);
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '13px ' + FONT;
+  ctx.textAlign = 'left';
+  ctx.fillText('ระดับอ้างอิง  h = 0', 24, originY - 8);
+  const lipX = X(-halfW);
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.fillStyle = '#1d4ed8';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(lipX - 16, Y(sim.h0));
+  ctx.lineTo(lipX - 16, originY);
+  ctx.moveTo(lipX - 22, Y(sim.h0) + 6);
+  ctx.lineTo(lipX - 16, Y(sim.h0));
+  ctx.lineTo(lipX - 10, Y(sim.h0) + 6);
+  ctx.moveTo(lipX - 22, originY - 6);
+  ctx.lineTo(lipX - 16, originY);
+  ctx.lineTo(lipX - 10, originY - 6);
+  ctx.stroke();
+  ctx.font = '12px ' + FONT;
+  ctx.fillText('h = ' + fmt(sim.h0, 1) + ' m', lipX - 78, (Y(sim.h0) + originY) / 2);
+  const br = clamp(ppm * 0.45, 15, 26);
+  drawTrail(ctx, function (xw, yw) {
+    const th = Math.atan2(xw, R - yw);
+    const inx = -Math.sin(th);
+    const iny = -Math.cos(th);
+    return { x: X(xw) + inx * br, y: Y(yw) + iny * br };
+  }, 3);
+  const th = sim.ang;
+  const tx = X(R * Math.sin(th));
+  const ty = Y(R * (1 - Math.cos(th)));
+  const inx = -Math.sin(th);
+  const iny = -Math.cos(th);
+  const cx = tx + inx * br;
+  const cy = ty + iny * br;
+  const boardAng = Math.atan2(-Math.sin(th), Math.cos(th));
+  ctx.save();
+  ctx.translate(tx, ty);
+  ctx.rotate(boardAng);
+  ctx.fillStyle = '#1f2937';
+  roundRect(ctx, -br * 1.15, -4, br * 2.3, 7, 3);
+  ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#f97316';
+  ctx.beginPath();
+  ctx.arc(cx, cy, br * 0.72, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.beginPath();
+  ctx.arc(cx - br * 0.22, cy - br * 0.22, br * 0.22, 0, Math.PI * 2);
+  ctx.fill();
+  if (sim.showVec) {
+    const pxN = forceScale([p.m * G, met.N]);
+    const pxV = 70 / Math.max(2.5, Math.abs(met.v));
+    drawArrow(ctx, cx, cy, cx, cy + p.m * G * pxN, COL.mg, 'mg');
+    if (met.N > 0.2) drawArrow(ctx, cx, cy, cx + inx * met.N * pxN, cy + iny * met.N * pxN, COL.N, 'N');
+    if (Math.abs(met.v) > 0.08) {
+      const vx = Math.cos(th) * Math.sign(sim.om || sim.dir);
+      const vy = -Math.sin(th) * Math.sign(sim.om || sim.dir);
+      drawArrow(ctx, cx, cy, cx + vx * Math.abs(met.v) * pxV, cy + vy * Math.abs(met.v) * pxV, COL.v, 'v');
+    }
+    drawLegend(ctx, w, [
+      { color: COL.mg, text: 'mg น้ำหนัก' },
+      { color: COL.N, text: 'N แรงตั้งฉาก' },
+      { color: COL.v, text: 'v คนละมาตราส่วน' }
+    ]);
+  }
+  drawScale(ctx, 18, h - 18, ppm);
+}
+
+function drawSpring(ctx, x1, x2, y) {
+  const n = 9;
+  const amp = 14;
+  ctx.save();
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  const span = x2 - x1;
+  for (let i = 0; i < n; i++) {
+    const x = x1 + (span * (i + 0.5)) / n;
+    const yy = y + (i % 2 === 0 ? -amp : amp);
+    ctx.lineTo(x, yy);
+  }
+  ctx.lineTo(x2, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawMode3(ctx, w, h, p, met) {
+  const groundY = h * 0.72;
+  drawLab(ctx, w, h, groundY);
+  const worldW = 4.3;
+  const ppm = (w - 80) / worldW;
+  const originX = 48;
+  const X = function (x) { return originX + x * ppm; };
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillRect(X(0), groundY - 150, X(0.16) - X(0), 150);
+  ctx.strokeStyle = 'rgba(51,65,85,0.35)';
+  ctx.lineWidth = 2;
+  for (let y = groundY - 140; y < groundY; y += 12) {
+    ctx.beginPath();
+    ctx.moveTo(X(0), y);
+    ctx.lineTo(X(0.16), y + 8);
+    ctx.stroke();
+  }
+  const massX = L0 + sim.sx;
+  const size = Math.min(64, Math.max(40, 0.62 * ppm));
+  const cx = X(massX);
+  const cy = groundY - size / 2;
+  const springEnd = cx - size / 2;
+  drawSpring(ctx, X(0.16), Math.max(X(0.2), springEnd), cy);
+  ctx.save();
+  ctx.strokeStyle = '#64748b';
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.moveTo(X(L0), groundY - 120);
+  ctx.lineTo(X(L0), groundY + 8);
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#475569';
+  ctx.font = '12px ' + FONT;
+  ctx.textAlign = 'center';
+  ctx.fillText('จุดสมดุล', X(L0), groundY - 128);
+  drawTrail(ctx, function (xw) { return { x: X(xw), y: groundY - 4 }; }, 3);
+  ctx.fillStyle = 'rgba(0,0,0,0.15)';
+  ctx.beginPath();
+  ctx.ellipse(cx, groundY + 3, size * 0.42, 7, 0, 0, 7);
+  ctx.fill();
+  drawCrate(ctx, cx, cy, size, 0);
+  if (sim.showVec) {
+    ctx.strokeStyle = COL.s;
+    ctx.fillStyle = COL.s;
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    ctx.moveTo(X(L0), groundY + 26);
+    ctx.lineTo(cx, groundY + 26);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawPill(ctx, 'x = ' + fmt(sim.sx) + ' m', (X(L0) + cx) / 2, groundY + 14, COL.s);
+    const pxN = forceScale([Math.abs(met.Fs), p.m * G, met.N]);
+    const pxV = 72 / Math.max(2, Math.abs(met.v));
+    drawArrow(ctx, cx, cy, cx + met.Fs * pxN, cy, COL.Fs, 'Fs ' + fmt(Math.abs(met.Fs), 0) + ' N');
+    drawArrow(ctx, cx, cy, cx, cy + p.m * G * pxN, COL.mg, 'mg');
+    drawArrow(ctx, cx, groundY - 2, cx, groundY - 2 - met.N * pxN, COL.N, 'N');
+    if (Math.abs(met.v) > 0.08) {
+      drawArrow(ctx, cx, cy - size / 2 - 28, cx + met.v * pxV, cy - size / 2 - 28, COL.v, 'v');
+    }
+    drawLegend(ctx, w, [
+      { color: COL.Fs, text: 'Fs แรงสปริง' },
+      { color: COL.mg, text: 'mg น้ำหนัก' },
+      { color: COL.N, text: 'N แรงตั้งฉาก' },
+      { color: COL.v, text: 'v คนละมาตราส่วน' }
+    ]);
+  }
+  drawScale(ctx, 18, h - 18, ppm);
+}
+
+function drawMode4(ctx, w, h, p, met) {
+  drawSky(ctx, w, h);
+  const pose = met.pose;
+  const L = sim.h0 > 1e-4 ? sim.h0 / SIN_R : 0;
+  const rampRun = L * COS_R;
+  const viewW = Math.max(rampRun + 8, 8);
+  const viewH = Math.max(sim.h0, 1) + 2.4;
+  const marginL = 70;
+  const marginB = 48;
+  const ppm = Math.min((w - marginL - 30) / viewW, (h - 70 - marginB) / viewH);
+  let cam = 0;
+  if (pose.x > rampRun + 3) cam = pose.x - (rampRun + 3);
+  const originX = marginL - cam * ppm;
+  const originY = h - marginB;
+  const X = function (x) { return originX + x * ppm; };
+  const Y = function (y) { return originY - y * ppm; };
+  ctx.fillStyle = '#67a35a';
+  ctx.beginPath();
+  ctx.moveTo(X(0), Y(0));
+  ctx.lineTo(X(0), Y(sim.h0));
+  ctx.lineTo(X(rampRun), Y(0));
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#3f6212';
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.moveTo(X(0), Y(sim.h0));
+  ctx.lineTo(X(rampRun), Y(0));
+  ctx.lineTo(w + 40, Y(0));
+  ctx.stroke();
+  ctx.fillStyle = '#4d7c0f';
+  ctx.fillRect(0, originY, w, h - originY);
+  if (p.mu > 0) {
+    ctx.fillStyle = 'rgba(30,41,59,0.35)';
+    for (let x = 0; x < w; x += 18) ctx.fillRect(x, originY + 10, 8, 3);
+  }
+  ctx.save();
+  ctx.strokeStyle = 'rgba(15,23,42,0.5)';
+  ctx.setLineDash([6, 5]);
+  ctx.beginPath();
+  ctx.moveTo(12, originY);
+  ctx.lineTo(w - 12, originY);
+  ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = '#0f172a';
+  ctx.font = '13px ' + FONT;
+  ctx.textAlign = 'left';
+  ctx.fillText('ระดับอ้างอิง  h = 0', 16, originY + 18);
+  if (sim.h0 > 0.2) {
+    const xDim = X(0) - 18;
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.fillStyle = '#1d4ed8';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xDim, Y(sim.h0));
+    ctx.lineTo(xDim, originY);
+    ctx.stroke();
+    ctx.font = '12px ' + FONT;
+    ctx.fillText('h = ' + fmt(sim.h0, 0) + ' m', Math.max(8, xDim - 62), (Y(sim.h0) + originY) / 2);
+    ctx.fillText('30°', X(rampRun * 0.45), Y(sim.h0 * 0.28));
+  }
+  const size = clamp(0.7 * ppm, 26, 54);
+  const contactX = X(pose.x);
+  const contactY = Y(pose.y);
+  let cx, cy, nx, ny, tx, ty;
+  if (pose.incline) {
+    nx = Math.sin(RAMP);
+    ny = -Math.cos(RAMP);
+    tx = COS_R;
+    ty = SIN_R;
+    const seat = size * 0.55;
+    const sx = contactX + tx * seat;
+    const sy = contactY + ty * seat;
+    cx = sx + nx * size / 2;
+    cy = sy + ny * size / 2;
+  } else {
+    nx = 0;
+    ny = -1;
+    tx = 1;
+    ty = 0;
+    cx = contactX;
+    cy = contactY - size / 2;
+  }
+  drawTrail(ctx, function (xw, yw) { return { x: X(xw), y: Y(yw) }; }, 3);
+  if (p.mu > 0 && sim.v > 0.12) {
+    const glow = ctx.createRadialGradient(contactX, contactY, 2, contactX, contactY, 26);
+    glow.addColorStop(0, 'rgba(249,115,22,0.75)');
+    glow.addColorStop(1, 'rgba(249,115,22,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(contactX, contactY, 26, 0, 7);
+    ctx.fill();
+  }
+  if (pose.incline) drawOrientedCrate(ctx, cx, cy, size, tx, ty, nx, ny);
+  else drawCrate(ctx, cx, cy, size, 0);
+  if (sim.showVec) {
+    const pxN = forceScale([p.m * G, met.N, met.f]);
+    const pxV = 72 / Math.max(2.5, Math.abs(met.v));
+    drawArrow(ctx, cx, cy, cx, cy + p.m * G * pxN, COL.mg, 'mg');
+    if (met.N > 0.3) drawArrow(ctx, cx, cy, cx + nx * met.N * pxN, cy + ny * met.N * pxN, COL.N, 'N');
+    if (Math.abs(met.f) > 0.3) {
+      const dir = met.f >= 0 ? 1 : -1;
+      drawArrow(ctx, cx, cy, cx + tx * dir * Math.abs(met.f) * pxN, cy + ty * dir * Math.abs(met.f) * pxN, COL.f, 'f');
+    }
+    if (Math.abs(met.v) > 0.08) {
+      const dir = met.v >= 0 ? 1 : -1;
+      drawArrow(ctx, cx, cy - 8, cx + tx * dir * Math.abs(met.v) * pxV, cy + ty * dir * Math.abs(met.v) * pxV - 8, COL.v, 'v');
+    }
+    if (Math.abs(met.v) < 0.03 && sim.t > 0) drawPill(ctx, 'ไม่มีการกระจัดเพิ่ม', cx, cy - size, '#9a3412');
+    drawLegend(ctx, w, [
+      { color: COL.mg, text: 'mg น้ำหนัก' },
+      { color: COL.N, text: 'N แรงตั้งฉาก' },
+      { color: COL.f, text: 'f แรงเสียดทาน' },
+      { color: COL.v, text: 'v คนละมาตราส่วน' }
+    ]);
+  }
+  drawScale(ctx, 18, h - 16, ppm);
+}
+
+function drawScene(ctx, w, h, p, met) {
+  if (sim.mode === 1) drawMode1(ctx, w, h, p, met);
+  else if (sim.mode === 2) drawMode2(ctx, w, h, p, met);
+  else if (sim.mode === 3) drawMode3(ctx, w, h, p, met);
+  else drawMode4(ctx, w, h, p, met);
+}
+
+function boot() {
+  const canvas = document.getElementById('view');
+  const els = {
+    m: document.getElementById('in-m'),
+    F: document.getElementById('in-f'),
+    theta: document.getElementById('in-th'),
+    h: document.getElementById('in-h'),
+    k: document.getElementById('in-k'),
+    mu: document.getElementById('in-mu')
+  };
+  let eqCache = '';
+  let misCache = '';
+
+  function readParams() {
+    return {
+      m: Number(els.m.value),
+      F: Number(els.F.value),
+      theta: Number(els.theta.value),
+      h: Number(els.h.value),
+      k: Number(els.k.value),
+      mu: Math.round(Number(els.mu.value) * 100) / 100
+    };
+  }
+
+  function sliderLabels(p) {
+    document.getElementById('val-m').textContent = p.m.toFixed(1) + ' kg';
+    document.getElementById('val-f').textContent = fmt(p.F, 0) + ' N';
+    const cos = Math.cos(p.theta * Math.PI / 180);
+    document.getElementById('val-th').textContent = fmt(p.theta, 0) + '° · cosθ = ' + fmt(cos, 2);
+    document.getElementById('val-h').textContent = p.h.toFixed(1) + ' m';
+    document.getElementById('val-k').textContent = fmt(p.k, 0) + ' N/m';
+    document.getElementById('val-mu').textContent = p.mu.toFixed(2);
+  }
+
+  function syncAvailability() {
+    const mode = sim.mode;
+    const map = {
+      'field-f': mode === 1,
+      'field-th': mode === 1,
+      'field-h': mode === 2 || mode === 4,
+      'field-k': mode === 3,
+      'field-mu': mode === 1 || mode === 4
+    };
+    Object.keys(map).forEach(function (id) {
+      const on = map[id];
+      const field = document.getElementById(id);
+      field.classList.toggle('is-off', !on);
+      field.querySelector('input').disabled = !on;
+    });
+    document.querySelectorAll('#modes button').forEach(function (btn) {
+      btn.classList.toggle('is-on', Number(btn.dataset.mode) === mode);
+    });
+    const hints = {
+      1: 'แรงคงตัวทำมุม θ กับแกนไปทางขวา บนพื้นราบ แรงตั้งฉากและน้ำหนักไม่ทำงานเพราะตั้งฉากกับการกระจัด',
+      2: 'ปล่อยวัตถุจากขอบรางสูง h โดยไม่มีความเร็วต้น ไม่มีแรงเสียดทาน ระดับอ้างอิงอยู่ที่ก้นราง',
+      3: 'ปล่อยมวลจากระยะยืด 1.00 m ขณะหยุดนิ่ง บนพื้นไร้แรงเสียดทาน สปริงไม่มีมวล',
+      4: 'พื้นเอียงคงที่ 30° สูง h แล้วต่อด้วยพื้นราบ ค่า μk ใช้ทั้งบนพื้นเอียงและพื้นราบ'
+    };
+    const scenes = {
+      1: 'ลากกล่องบนพื้นราบด้วยแรงคงตัว',
+      2: 'วัตถุบนรางสเก็ตไร้แรงเสียดทาน',
+      3: 'มวลติดสปริงบนพื้นราบ',
+      4: 'กล่องไถลบนพื้นเอียง 30° แล้วออกสู่พื้นราบ'
+    };
+    document.getElementById('mode-hint').textContent = hints[mode];
+    document.getElementById('scene-label').textContent = scenes[mode];
+  }
+
+  function paint() {
+    const p = readParams();
+    sliderLabels(p);
+    const met = metrics(p);
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(10, rect.width);
+    const h = Math.max(10, rect.height);
+    const pw = Math.round(w * dpr);
+    const ph = Math.round(h * dpr);
+    if (canvas.width !== pw || canvas.height !== ph) {
+      canvas.width = pw;
+      canvas.height = ph;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawScene(ctx, w, h, p, met);
+
+    document.getElementById('out-w').textContent = fmt(met.wnet) + ' J';
+    document.getElementById('out-ek').textContent = fmt(met.ek) + ' J';
+    document.getElementById('out-ep').textContent = fmt(met.ep) + ' J';
+    document.getElementById('out-e').textContent = fmt(met.etot) + ' J';
+    document.getElementById('sub-w').textContent = 'ΔE_k = ' + fmt(met.ek) + ' J';
+    document.getElementById('sub-ep').textContent = 'โน้มถ่วง ' + fmt(met.epg) + ' · ยืดหยุ่น ' + fmt(met.eps) + ' J';
+
+    const eq = equationHTML(p, met);
+    if (eq !== eqCache) {
+      eqCache = eq;
+      document.getElementById('eq').innerHTML = eq;
+    }
+    const mis = misconception(p, met);
+    if (mis !== misCache) {
+      misCache = mis;
+      document.getElementById('mis-body').textContent = mis;
+    }
+
+    document.getElementById('chart').hidden = !sim.showChart;
+    if (sim.showChart) {
+      const scale = chartScale(p, met);
+      document.getElementById('chart-scale').textContent = 'สเกล ± ' + fmt(scale, scale >= 100 ? 0 : 1) + ' J';
+      const bars = { ek: met.ek, epg: met.epg, eps: met.eps, wnc: met.wnc, et: met.etot };
+      Object.keys(bars).forEach(function (key) {
+        const v = bars[key];
+        const pct = Math.min(50, (Math.abs(v) / scale) * 50);
+        document.getElementById('bup-' + key).style.height = (v >= 0 ? pct : 0) + '%';
+        document.getElementById('bdown-' + key).style.height = (v < 0 ? pct : 0) + '%';
+        document.getElementById('bval-' + key).textContent = fmt(v);
+      });
+      const notes = {
+        1: 'เส้นกลางคือศูนย์ แท่งขึ้นเป็นค่าบวก แท่งลงเป็นค่าลบ งานจากแรงที่ลากและแรงเสียดทานรวมอยู่ใน W_nc',
+        2: 'สเกลอิงพลังงานตอนปล่อย จึงเห็น E_k กับ E_p สลับกันโดย E รวมสูงเท่าเดิม และ W_nc = 0',
+        3: 'ศักย์ยืดหยุ่นกับพลังงานจลน์สลับกัน W_nc = 0 เพราะแรงสปริงเป็นแรงอนุรักษ์',
+        4: 'สเกลอิงพลังงานตอนปล่อย ถ้ามีแรงเสียดทาน แท่ง E จะเตี้ยลงและ W_nc จะชีลงเท่าพลังงานที่กลายเป็นความร้อน'
+      };
+      document.getElementById('chart-note').textContent = notes[sim.mode];
+    }
+
+    const sNames = { 1: 'การกระจัด Δx', 2: 'ระยะตามราง s', 3: 'ตำแหน่ง x จากจุดสมดุล', 4: 'ระยะทางตามเส้นทาง s' };
+    const sNotes = { 1: 'บวกไปทางขวา', 2: 'จากขอบซ้ายของราง', 3: 'บวกคือสปริงยืด', 4: sim.phase === 'incline' ? 'บนพื้นเอียง' : 'ถึงพื้นราบแล้ว' };
+    document.getElementById('kin-s-label').textContent = sNames[sim.mode];
+    document.getElementById('kin-v').textContent = fmt(met.v) + ' m/s';
+    document.getElementById('kin-v-dir').textContent = dirWord(met.v);
+    document.getElementById('kin-s').textContent = fmt(met.s) + ' m';
+    document.getElementById('kin-s-dir').textContent = sNotes[sim.mode];
+    document.getElementById('kin-t').textContent = fmt(sim.t) + ' s';
+    document.getElementById('kin-a').textContent = fmt(met.a) + ' m/s²';
+    document.getElementById('kin-n').textContent = fmt(met.N) + ' N';
+    document.getElementById('kin-f').textContent = fmt(met.f) + ' N';
+    const signs = {
+      1: 'เครื่องหมายบวกของ v, a และ f = ไปทางขวา',
+      2: 'เครื่องหมายบวกของ v = ไปทางขวาตามราง · a เป็นความเร่งตามแนวราง',
+      3: 'เครื่องหมายบวกของ x และ v = ไปทางขวาจากจุดสมดุล · แรงสปริงชี้เข้าหาจุดสมดุล',
+      4: sim.phase === 'incline' ? 'เครื่องหมายบวกของ v = ลงตามราง · f เป็นลบเพราะต้านการไถลลง' : 'เครื่องหมายบวกของ v = ไปทางขวาบนพื้นราบ'
+    };
+    document.getElementById('sign-note').textContent = signs[sim.mode];
+
+    let status = 'พร้อมเริ่ม';
+    if (sim.playing) status = 'กำลังจำลอง';
+    else if (sim.t > 0) status = 'หยุดชั่วคราว';
+    if (sim.mode === 1 && met.forces && met.forces.stuck && (sim.playing || sim.t > 0)) status = 'วัตถุไม่เคลื่อนที่';
+    if (sim.mode === 4 && sim.phase === 'flat' && Math.abs(sim.v) < 0.03 && sim.t > 0.05) status = 'วัตถุหยุดนิ่ง';
+    document.getElementById('status').textContent = status;
+    document.getElementById('btn-play').disabled = sim.playing;
+    document.getElementById('btn-pause').disabled = !sim.playing;
+    document.getElementById('paused-hint').hidden = sim.playing || sim.t > 0;
+  }
+
+  function setMode(mode) {
+    sim.mode = mode;
+    sim.playing = false;
+    resetMotion(readParams());
+    eqCache = '';
+    misCache = '';
+    syncAvailability();
+  }
+
+  document.querySelectorAll('#modes button').forEach(function (btn) {
+    btn.addEventListener('click', function () { setMode(Number(btn.dataset.mode)); });
+  });
+  document.getElementById('btn-play').addEventListener('click', function () { sim.playing = true; });
+  document.getElementById('btn-pause').addEventListener('click', function () { sim.playing = false; });
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    sim.playing = false;
+    resetMotion(readParams());
+    eqCache = '';
+    misCache = '';
+  });
+  document.getElementById('btn-step').addEventListener('click', function () {
+    sim.playing = false;
+    const p = readParams();
+    let left = 0.05;
+    while (left > 1e-6) {
+      const h = Math.min(DT, left);
+      physicsStep(h, p);
+      left -= h;
+    }
+  });
+  Object.keys(els).forEach(function (key) {
+    els[key].addEventListener('input', function () {
+      if ((sim.mode === 2 || sim.mode === 4) && key === 'h') {
+        const playing = sim.playing;
+        resetMotion(readParams());
+        sim.playing = playing;
+        eqCache = '';
+        misCache = '';
+      }
+    });
+  });
+  document.getElementById('tog-vec').addEventListener('change', function (e) { sim.showVec = e.target.checked; });
+  document.getElementById('tog-chart').addEventListener('change', function (e) { sim.showChart = e.target.checked; });
+  window.addEventListener('keydown', function (e) {
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'BUTTON' || tag === 'TEXTAREA') return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      sim.playing = !sim.playing;
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      document.getElementById('btn-step').click();
+    } else if (e.key === 'r' || e.key === 'R') {
+      document.getElementById('btn-reset').click();
+    }
+  });
+
+  const q = new URLSearchParams(location.search);
+  sim.showVec = document.getElementById('tog-vec').checked;
+  sim.showChart = document.getElementById('tog-chart').checked;
+  if (q.get('F') != null) els.F.value = q.get('F');
+  if (q.get('th') != null) els.theta.value = q.get('th');
+  if (q.get('h') != null) els.h.value = q.get('h');
+  if (q.get('k') != null) els.k.value = q.get('k');
+  if (q.get('mu') != null) els.mu.value = q.get('mu');
+  if (q.get('m') != null) els.m.value = q.get('m');
+  setMode(q.get('mode') ? clamp(Number(q.get('mode')) || 1, 1, 4) : 1);
+  if (q.get('run')) {
+    const T = Math.max(0, Number(q.get('run')) || 0);
+    const p = readParams();
+    let t = 0;
+    while (t < T) {
+      physicsStep(DT, p);
+      t += DT;
+    }
+    sim.playing = q.get('play') === '1';
+  }
+
+  let last = 0;
+  let acc = 0;
+  function frame(now) {
+    if (!last) last = now;
+    let delta = (now - last) / 1000;
+    last = now;
+    if (delta > 0.05) delta = 0.05;
+    if (sim.playing) {
+      acc += delta;
+      let guard = 0;
+      while (acc >= DT && guard < 8) {
+        physicsStep(DT, readParams());
+        acc -= DT;
+        guard += 1;
+      }
+    } else {
+      acc = 0;
+    }
+    paint();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+if (typeof window !== 'undefined') boot();
+</script>
+</body>
+</html>
