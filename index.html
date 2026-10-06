@@ -29,6 +29,7 @@
     flex-direction: column;
     overflow: hidden;
   }
+  header, footer { flex: none; }
   header {
     display: flex;
     justify-content: space-between;
@@ -113,7 +114,7 @@
   }
   .hint-mode { color: var(--muted); font-size: 13px; line-height: 1.5; margin: 8px 0 0; }
   .canvas-wrap {
-    position: relative; flex: 1; min-height: 280px; border-radius: 18px; overflow: hidden; background: #102033;
+    position: relative; flex: 1 1 auto; min-height: 240px; border-radius: 18px; overflow: hidden; background: #102033;
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 18px 50px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(62,235,173,0.08);
   }
@@ -128,30 +129,33 @@
     backdrop-filter: blur(8px);
   }
   .hint-overlay {
-    left: 50%; top: 46%; transform: translate(-50%, -50%);
-    background: rgba(11, 58, 74, 0.88); color: #fff; border-radius: 12px; padding: 10px 14px; font-size: 16px;
+    left: 50%; top: 12px; transform: translateX(-50%);
+    background: rgba(11, 58, 74, 0.88); color: #fff; border-radius: 12px; padding: 8px 14px; font-size: 15px;
+    white-space: nowrap;
   }
   .hint-overlay[hidden], .chart[hidden] { display: none !important; }
+  .readouts, .eq, .dock { flex: none; }
   .readouts {
     display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
   }
   .readout {
     background: rgba(8, 10, 16, 0.92); border: 1px solid rgba(255,255,255,0.1);
     border-top: 3px solid var(--c, var(--brand));
-    border-radius: 12px; padding: 6px 10px; min-width: 0;
+    border-radius: 12px; padding: 8px 12px; min-width: 0;
   }
-  .readout .name { color: var(--muted); font-size: 12px; }
+  .readout .name { color: var(--muted); font-size: 13px; }
   .readout .num {
-    display: block; font-size: clamp(16px, 1.5vw, 22px); font-weight: 700;
-    font-variant-numeric: tabular-nums; margin: 1px 0; color: var(--c, #fff);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    display: block; font-size: clamp(18px, 1.5vw, 24px); font-weight: 700;
+    font-variant-numeric: tabular-nums; margin: 2px 0; color: var(--c, #fff);
+    white-space: nowrap;
   }
-  .readout .sub { display: block; color: #c5d0de; font-size: 11px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .readout .sub { display: block; color: #c5d0de; font-size: 12px; line-height: 1.35; white-space: nowrap; }
   .eq {
-    background: rgba(8, 12, 18, 0.92); color: #e8eef6; border-radius: 14px; padding: 8px 12px;
-    font-size: 14.5px; line-height: 1.5; overflow: auto; max-height: 92px;
+    background: rgba(8, 12, 18, 0.92); color: #e8eef6; border-radius: 14px; padding: 8px 14px;
+    font-size: 15px; line-height: 1.55; overflow: visible;
     border: 1px solid rgba(255,255,255,0.08);
   }
+  .drawer .eq { margin-top: 10px; }
   .eq .hot { color: #fde68a; }
   .eq .param { color: #7dd3fc; }
   .eq .ok { color: #86efac; }
@@ -188,8 +192,10 @@
     box-shadow: 0 10px 28px rgba(62, 235, 173, 0.28);
   }
   .fab.alt { color: #fff; background: #7c5cff; box-shadow: 0 10px 28px rgba(124, 92, 255, 0.38); }
+  .fab.warm { color: #2a1a04; background: #ffc14d; box-shadow: 0 10px 28px rgba(255, 193, 77, 0.34); }
   .fab.is-on { box-shadow: 0 0 0 3px rgba(255,255,255,0.85), 0 10px 28px rgba(62, 235, 173, 0.28); }
   .fab.alt.is-on { box-shadow: 0 0 0 3px rgba(255,255,255,0.85), 0 10px 28px rgba(124, 92, 255, 0.38); }
+  .fab.warm.is-on { box-shadow: 0 0 0 3px rgba(255,255,255,0.85), 0 10px 28px rgba(255, 193, 77, 0.34); }
   .fab:active { transform: scale(0.96); }
   .drawer {
     position: fixed; z-index: 40; bottom: 78px; width: min(390px, calc(100vw - 24px));
@@ -204,6 +210,11 @@
   }
   .drawer.left { left: 14px; transform-origin: bottom left; }
   .drawer.right { right: 14px; width: min(520px, calc(100vw - 24px)); transform-origin: bottom right; }
+  .drawer.center {
+    left: 50%; width: min(980px, calc(100vw - 24px)); transform-origin: bottom center;
+    transform: translate(-50%, 18px) scale(0.94);
+  }
+  .drawer.center.is-open { transform: translate(-50%, 0) scale(1); }
   .drawer { visibility: hidden; }
   .drawer.is-open { opacity: 1; pointer-events: auto; visibility: visible; transform: translateY(0) scale(1); }
   .drawer-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -212,15 +223,18 @@
     font: inherit; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line);
     background: #1c2230; color: #fff; cursor: pointer;
   }
-  footer { padding: 0 16px 8px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
+  footer { padding: 0 16px 8px; color: var(--muted); font-size: 12px; line-height: 1.45; }
   @media (max-width: 860px) {
     header p { display: none; }
     .readouts { grid-template-columns: 1fr 1fr; }
     .readout .num { font-size: 16px; }
-    .drawer, .drawer.right { left: 10px; right: 10px; width: auto; }
+    .drawer, .drawer.right, .drawer.center { left: 10px; right: 10px; width: auto; transform: translateY(18px) scale(0.94); }
+    .drawer.center.is-open { transform: translateY(0) scale(1); }
     body { overflow: auto; height: auto; }
     .stage { min-height: 100vh; }
-    .canvas-wrap { min-height: 420px; flex: none; height: 62vh; }
+    .hint-overlay { top: 50px; }
+    .readout .sub { white-space: normal; }
+    .canvas-wrap { min-height: 420px; flex: none; height: 74vh; }
   }
   @media (prefers-reduced-motion: reduce) {
     .drawer { transition: none; }
@@ -241,29 +255,6 @@
     <div class="scene-label" id="scene-label">ลากกล่องบนพื้นราบ</div>
     <div class="hint-overlay" id="paused-hint">กด “เล่น” เพื่อเริ่มจำลอง</div>
   </div>
-  <div class="readouts">
-    <article class="readout" style="--c:#3eebad">
-      <span class="name">งานรวม W_net</span>
-      <span class="num" id="out-w">0.00 J</span>
-      <span class="sub" id="sub-w">เท่ากับ ΔE_k</span>
-    </article>
-    <article class="readout" style="--c:#ffc14d">
-      <span class="name">พลังงานจลน์ E_k</span>
-      <span class="num" id="out-ek">0.00 J</span>
-      <span class="sub">½mv²</span>
-    </article>
-    <article class="readout" style="--c:#7ecbff">
-      <span class="name">พลังงานศักย์ E_p</span>
-      <span class="num" id="out-ep">0.00 J</span>
-      <span class="sub" id="sub-ep">E_p,g + E_p,s</span>
-    </article>
-    <article class="readout" style="--c:#c4b5fd">
-      <span class="name">พลังงานกลรวม E</span>
-      <span class="num" id="out-e">0.00 J</span>
-      <span class="sub">E_k + E_p</span>
-    </article>
-  </div>
-  <div class="eq" id="eq" aria-live="polite"></div>
   <div class="dock">
     <button type="button" class="fab" id="open-controls" aria-expanded="false" aria-controls="drawer-controls">ปรับค่า</button>
     <div class="transport">
@@ -272,6 +263,7 @@
       <button type="button" id="btn-step">ทีละเฟรม</button>
       <button type="button" id="btn-reset">เริ่มใหม่</button>
     </div>
+    <button type="button" class="fab warm" id="open-energy" aria-expanded="false" aria-controls="drawer-energy">สมการ</button>
     <button type="button" class="fab alt" id="open-graph" aria-expanded="false" aria-controls="drawer-graph">กราฟ</button>
   </div>
 </main>
@@ -330,6 +322,35 @@
     </label>
     <p class="hint-mode" id="mode-hint"></p>
     <p class="keys">เว้นวรรค = เล่นหรือหยุด · ลูกศรขวา = ทีละเฟรม · R = เริ่มใหม่</p>
+</aside>
+<aside class="drawer center" id="drawer-energy" aria-label="ค่าพลังงานและสมการ">
+  <div class="drawer-head">
+    <h2>ค่าพลังงานและสมการ</h2>
+    <button type="button" class="icon-x" data-close="energy" aria-label="ปิดแผงสมการ">×</button>
+  </div>
+  <div class="readouts">
+    <article class="readout" style="--c:#3eebad">
+      <span class="name">งานรวม W_net</span>
+      <span class="num" id="out-w">0.00 J</span>
+      <span class="sub" id="sub-w">เท่ากับ ΔE_k</span>
+    </article>
+    <article class="readout" style="--c:#ffc14d">
+      <span class="name">พลังงานจลน์ E_k</span>
+      <span class="num" id="out-ek">0.00 J</span>
+      <span class="sub">½mv²</span>
+    </article>
+    <article class="readout" style="--c:#7ecbff">
+      <span class="name">พลังงานศักย์ E_p</span>
+      <span class="num" id="out-ep">0.00 J</span>
+      <span class="sub" id="sub-ep">E_p,g + E_p,s</span>
+    </article>
+    <article class="readout" style="--c:#c4b5fd">
+      <span class="name">พลังงานกลรวม E</span>
+      <span class="num" id="out-e">0.00 J</span>
+      <span class="sub">E_k + E_p</span>
+    </article>
+  </div>
+  <div class="eq" id="eq" aria-live="polite"></div>
 </aside>
 <aside class="drawer right" id="drawer-graph" aria-label="การวิเคราะห์">
   <div class="drawer-head">
@@ -874,7 +895,7 @@ function drawArrow(ctx, x1, y1, x2, y2, color, label) {
 
 function drawScale(ctx, x, y, ppm) {
   let meters = 1;
-  if (ppm > 150) meters = 0.5;
+  if (ppm > 240) meters = 0.5;
   if (ppm < 28) meters = 2;
   if (ppm < 16) meters = 5;
   const px = meters * ppm;
@@ -986,9 +1007,9 @@ function drawLab(ctx, w, h, groundY) {
   ctx.fillRect(0, groundY, w, 8);
 }
 
-function forceScale(values) {
+function forceScale(values, px) {
   const maxMag = Math.max.apply(null, values.map(function (v) { return Math.abs(v); }).concat([8]));
-  return 118 / maxMag;
+  return (px || 118) / maxMag;
 }
 
 function chartScale(p, met) {
@@ -1039,9 +1060,9 @@ function drawLegend(ctx, w, lines) {
 function drawMode1(ctx, w, h, p, met) {
   const groundY = h * 0.74;
   drawLab(ctx, w, h, groundY);
-  const ppm = 70;
-  const box = 58;
-  const bx = w * 0.4;
+  const box = clamp(Math.min(w, h) * 0.16, 64, 108);
+  const ppm = clamp(box * 1.05, 72, 120);
+  const bx = w * 0.42;
   const by = groundY - box / 2 - 2;
   const plank = 46;
   ctx.save();
@@ -1085,7 +1106,7 @@ function drawMode1(ctx, w, h, p, met) {
   }
   ctx.fillStyle = 'rgba(0,0,0,0.16)';
   ctx.beginPath();
-  ctx.ellipse(bx, groundY + 4, 30, 7, 0, 0, 7);
+  ctx.ellipse(bx, groundY + 4, box * 0.52, box * 0.12, 0, 0, 7);
   ctx.fill();
   if (p.mu > 0 && Math.abs(sim.v) > 0.15) {
     const glow = ctx.createRadialGradient(bx, groundY, 2, bx, groundY, 34);
@@ -1098,12 +1119,13 @@ function drawMode1(ctx, w, h, p, met) {
   }
   drawCrate(ctx, bx, by, box, 0);
   if (sim.showVec && Math.abs(sim.v) < 0.03 && Math.abs(sim.x) < 0.04) {
-    drawPill(ctx, 'ไม่มีการกระจัด งาน = 0', bx, by - box / 2 - 18, '#9a3412');
+    drawPill(ctx, 'ไม่มีการกระจัด งาน = 0', Math.max(118, bx - box / 2 - 92), by - 4, '#9a3412');
   }
   if (sim.showVec) {
     const f = met.forces;
-    const pxN = forceScale([p.F, p.m * G, f.N, f.fAxis]);
-    const pxV = 70 / Math.max(4, Math.abs(sim.v));
+    const budget = Math.min(box * 1.7, Math.max(96, by - box / 2 - 28));
+    const pxN = forceScale([p.F, p.m * G, f.N, f.fAxis], budget);
+    const pxV = Math.min(box, 96) / Math.max(4, Math.abs(sim.v));
     const fx = f.Fx * pxN;
     const fy = -f.Fy * pxN;
     ctx.save();
@@ -1122,17 +1144,18 @@ function drawMode1(ctx, w, h, p, met) {
       ctx.strokeStyle = COL.F;
       ctx.lineWidth = 1.4;
       ctx.beginPath();
+      const arcR = box * 0.5;
       const steps = 12;
       for (let i = 0; i <= steps; i++) {
         const a = (p.theta * Math.PI / 180) * (i / steps);
-        const x = bx + 32 * Math.cos(a);
-        const y = by - 32 * Math.sin(a);
+        const x = bx + arcR * Math.cos(a);
+        const y = by - arcR * Math.sin(a);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
       ctx.stroke();
       ctx.restore();
       const mid = (p.theta * Math.PI / 180) / 2;
-      drawPill(ctx, 'θ', bx + 48 * Math.cos(mid), by - 48 * Math.sin(mid), COL.F);
+      drawPill(ctx, 'θ', bx + (arcR + 18) * Math.cos(mid), by - (arcR + 18) * Math.sin(mid), COL.F);
     }
     drawArrow(ctx, bx, by, bx + fx, by + fy, COL.F, 'F ' + fmt(p.F, 0) + ' N');
     drawArrow(ctx, bx - 14, by, bx - 14, by + p.m * G * pxN, COL.mg, 'mg ' + fmt(p.m * G, 0) + ' N');
@@ -1158,8 +1181,8 @@ function drawMode2(ctx, w, h, p, met) {
   drawSky(ctx, w, h);
   const R = Math.max(bowlR(), 0.001);
   const halfW = R * Math.sin(THETA_MAX);
-  const margin = 56;
-  const ppm = Math.min((w - margin * 2) / Math.max(2 * halfW, 1), (h - 120) / Math.max(sim.h0 + 2.2, 2.5));
+  const margin = 64;
+  const ppm = Math.min((w - margin * 2) / Math.max(2 * halfW, 1), (h - 108) / Math.max(sim.h0 + 2.1, 2.5));
   const originX = w / 2;
   const originY = h - 58;
   const X = function (x) { return originX + x * ppm; };
@@ -1221,7 +1244,7 @@ function drawMode2(ctx, w, h, p, met) {
   ctx.stroke();
   ctx.font = '12px ' + FONT;
   ctx.fillText('h = ' + fmt(sim.h0, 1) + ' m', lipX - 78, (Y(sim.h0) + originY) / 2);
-  const br = clamp(ppm * 0.45, 15, 26);
+  const br = clamp(ppm * 0.48, 16, 30);
   drawTrail(ctx, function (xw, yw) {
     const th = Math.atan2(xw, R - yw);
     const inx = -Math.sin(th);
@@ -1295,7 +1318,7 @@ function drawMode3(ctx, w, h, p, met) {
   const groundY = h * 0.72;
   drawLab(ctx, w, h, groundY);
   const worldW = 4.3;
-  const ppm = (w - 80) / worldW;
+  const ppm = (w - 96) / worldW;
   const originX = 48;
   const X = function (x) { return originX + x * ppm; };
   ctx.fillStyle = '#94a3b8';
@@ -1309,7 +1332,7 @@ function drawMode3(ctx, w, h, p, met) {
     ctx.stroke();
   }
   const massX = L0 + sim.sx;
-  const size = Math.min(64, Math.max(40, 0.62 * ppm));
+  const size = clamp(0.58 * ppm, 46, 84);
   const cx = X(massX);
   const cy = groundY - size / 2;
   const springEnd = cx - size / 2;
@@ -1370,7 +1393,7 @@ function drawMode4(ctx, w, h, p, met) {
   const viewH = Math.max(sim.h0, 1) + 2.4;
   const marginL = 70;
   const marginB = 48;
-  const ppm = Math.min((w - marginL - 30) / viewW, (h - 70 - marginB) / viewH);
+  const ppm = Math.min((w - marginL - 40) / viewW, (h - 78 - marginB) / viewH);
   let cam = 0;
   if (pose.x > rampRun + 3) cam = pose.x - (rampRun + 3);
   const originX = marginL - cam * ppm;
@@ -1422,7 +1445,7 @@ function drawMode4(ctx, w, h, p, met) {
     ctx.fillText('h = ' + fmt(sim.h0, 0) + ' m', Math.max(8, xDim - 62), (Y(sim.h0) + originY) / 2);
     ctx.fillText('30°', X(rampRun * 0.45), Y(sim.h0 * 0.28));
   }
-  const size = clamp(0.7 * ppm, 26, 54);
+  const size = clamp(0.72 * ppm, 28, 58);
   const contactX = X(pose.x);
   const contactY = Y(pose.y);
   let cx, cy, nx, ny, tx, ty;
@@ -1685,9 +1708,16 @@ function boot() {
   });
   document.getElementById('tog-vec').addEventListener('change', function (e) { sim.showVec = e.target.checked; });
   document.getElementById('tog-chart').addEventListener('change', function (e) { sim.showChart = e.target.checked; });
+  const drawerIds = {
+    controls: ['drawer-controls', 'open-controls'],
+    graph: ['drawer-graph', 'open-graph'],
+    energy: ['drawer-energy', 'open-energy']
+  };
   function setDrawer(name, open) {
-    const drawer = document.getElementById(name === 'graph' ? 'drawer-graph' : 'drawer-controls');
-    const btn = document.getElementById(name === 'graph' ? 'open-graph' : 'open-controls');
+    const pair = drawerIds[name];
+    if (!pair) return;
+    const drawer = document.getElementById(pair[0]);
+    const btn = document.getElementById(pair[1]);
     drawer.classList.toggle('is-open', open);
     btn.classList.toggle('is-on', open);
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
@@ -1700,6 +1730,10 @@ function boot() {
     const open = !document.getElementById('drawer-graph').classList.contains('is-open');
     setDrawer('graph', open);
   });
+  document.getElementById('open-energy').addEventListener('click', function () {
+    const open = !document.getElementById('drawer-energy').classList.contains('is-open');
+    setDrawer('energy', open);
+  });
   document.querySelectorAll('[data-close]').forEach(function (btn) {
     btn.addEventListener('click', function () { setDrawer(btn.dataset.close, false); });
   });
@@ -1707,12 +1741,14 @@ function boot() {
     if (e.target.closest('.drawer, .fab, .dock')) return;
     setDrawer('controls', false);
     setDrawer('graph', false);
+    setDrawer('energy', false);
   });
 
   window.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
       setDrawer('controls', false);
       setDrawer('graph', false);
+      setDrawer('energy', false);
       return;
     }
     const tag = e.target && e.target.tagName;
@@ -1748,7 +1784,7 @@ function boot() {
     }
     sim.playing = q.get('play') === '1';
   }
-  if (q.get('panel') === 'controls' || q.get('panel') === 'graph') setDrawer(q.get('panel'), true);
+  if (drawerIds[q.get('panel')]) setDrawer(q.get('panel'), true);
 
   let last = 0;
   let acc = 0;
