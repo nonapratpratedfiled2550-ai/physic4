@@ -133,20 +133,20 @@
   }
   .hint-overlay[hidden], .chart[hidden] { display: none !important; }
   .readouts {
-    position: absolute; z-index: 3; top: 50px; left: 12px;
-    width: min(680px, calc(100% - 210px));
     display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;
-    pointer-events: none;
   }
   .readout {
-    background: rgba(8, 10, 16, 0.78); border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(8, 10, 16, 0.92); border: 1px solid rgba(255,255,255,0.1);
     border-top: 3px solid var(--c, var(--brand));
-    border-radius: 12px; padding: 7px 10px; min-width: 0;
-    backdrop-filter: blur(10px);
+    border-radius: 12px; padding: 6px 10px; min-width: 0;
   }
   .readout .name { color: var(--muted); font-size: 12px; }
-  .readout .num { display: block; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; color: var(--c, #fff); }
-  .readout .sub { display: block; color: #c5d0de; font-size: 11px; line-height: 1.35; }
+  .readout .num {
+    display: block; font-size: clamp(16px, 1.5vw, 22px); font-weight: 700;
+    font-variant-numeric: tabular-nums; margin: 1px 0; color: var(--c, #fff);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .readout .sub { display: block; color: #c5d0de; font-size: 11px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .eq {
     background: rgba(8, 12, 18, 0.92); color: #e8eef6; border-radius: 14px; padding: 8px 12px;
     font-size: 14.5px; line-height: 1.5; overflow: auto; max-height: 92px;
@@ -215,7 +215,7 @@
   footer { padding: 0 16px 8px; color: var(--muted); font-size: 11.5px; line-height: 1.4; }
   @media (max-width: 860px) {
     header p { display: none; }
-    .readouts { width: calc(100% - 24px); grid-template-columns: 1fr 1fr; top: 46px; }
+    .readouts { grid-template-columns: 1fr 1fr; }
     .readout .num { font-size: 16px; }
     .drawer, .drawer.right { left: 10px; right: 10px; width: auto; }
     body { overflow: auto; height: auto; }
@@ -240,28 +240,28 @@
     <canvas id="view" width="900" height="430"></canvas>
     <div class="scene-label" id="scene-label">ลากกล่องบนพื้นราบ</div>
     <div class="hint-overlay" id="paused-hint">กด “เล่น” เพื่อเริ่มจำลอง</div>
-    <div class="readouts">
-      <article class="readout" style="--c:#3eebad">
-        <span class="name">งานรวม W_net</span>
-        <span class="num" id="out-w">0.00 J</span>
-        <span class="sub" id="sub-w">เท่ากับ ΔE_k</span>
-      </article>
-      <article class="readout" style="--c:#ffc14d">
-        <span class="name">พลังงานจลน์ E_k</span>
-        <span class="num" id="out-ek">0.00 J</span>
-        <span class="sub">½mv²</span>
-      </article>
-      <article class="readout" style="--c:#7ecbff">
-        <span class="name">พลังงานศักย์ E_p</span>
-        <span class="num" id="out-ep">0.00 J</span>
-        <span class="sub" id="sub-ep">E_p,g + E_p,s</span>
-      </article>
-      <article class="readout" style="--c:#c4b5fd">
-        <span class="name">พลังงานกลรวม E</span>
-        <span class="num" id="out-e">0.00 J</span>
-        <span class="sub">E_k + E_p</span>
-      </article>
-    </div>
+  </div>
+  <div class="readouts">
+    <article class="readout" style="--c:#3eebad">
+      <span class="name">งานรวม W_net</span>
+      <span class="num" id="out-w">0.00 J</span>
+      <span class="sub" id="sub-w">เท่ากับ ΔE_k</span>
+    </article>
+    <article class="readout" style="--c:#ffc14d">
+      <span class="name">พลังงานจลน์ E_k</span>
+      <span class="num" id="out-ek">0.00 J</span>
+      <span class="sub">½mv²</span>
+    </article>
+    <article class="readout" style="--c:#7ecbff">
+      <span class="name">พลังงานศักย์ E_p</span>
+      <span class="num" id="out-ep">0.00 J</span>
+      <span class="sub" id="sub-ep">E_p,g + E_p,s</span>
+    </article>
+    <article class="readout" style="--c:#c4b5fd">
+      <span class="name">พลังงานกลรวม E</span>
+      <span class="num" id="out-e">0.00 J</span>
+      <span class="sub">E_k + E_p</span>
+    </article>
   </div>
   <div class="eq" id="eq" aria-live="polite"></div>
   <div class="dock">
